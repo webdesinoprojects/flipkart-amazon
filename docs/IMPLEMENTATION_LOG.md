@@ -285,3 +285,20 @@ The authorized local fixture set contains:
 - Gemini, OpenAI, ImageKit, and Neon network calls were contract-tested with mocked transports/configuration; live credentials were not available and are not required for the core workflow.
 - Local OpenCV fallback proposes content bounds; it is not a downloaded generative model and still depends on the same deterministic post-validation gate.
 - The current server worker provides bounded fallback ingestion/inspection infrastructure. Native known-marketplace normalization remains browser-primary, and optional vision proposals are integrated through the coordinator seam rather than automatically uploading customer pages.
+
+## Post-Phase 10 fix — Meesho exchange-label retention
+
+**Status:** Complete
+
+### Major decisions
+
+- Added a versioned Meesho A4 exchange-label fingerprint using combined exchange, address, returns, product, geometry, and optional carrier evidence. Carrier names are supporting evidence only and never classify a marketplace by themselves.
+- Exchange-only pages are normalized from native PDF content and deliberately routed to manual review while this newer layout family has limited golden coverage.
+- Added a pipeline-wide safety net: any nonblank, non-invoice page for which an adapter emits no printable region is retained as a full-page manual-review item instead of being silently discarded.
+
+### Tests and verification
+
+- Added adapter regression coverage for the Meesho exchange layout and pipeline regression coverage for zero-region retention.
+- The current real 25-page Meesho batch was checked read-only: 1 exchange label plus 24 label-and-invoice pages produced 25 printable regions, with the exchange page retained for review.
+- Full Vitest suite: 48 tests passed across 18 files. ESLint, targeted Prettier checks, TypeScript/Next.js production build, and local Docker health checks passed.
+- Added an explicit `APPROVE ALL` review action that records manual evidence for every current review item and rebuilds the combined PDF once, while preserving individual approve, re-detect, download, and skip controls.

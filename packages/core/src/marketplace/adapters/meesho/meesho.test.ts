@@ -12,7 +12,7 @@ import type {
   PdfTextItem,
 } from "../../../types";
 import { selectMarketplaceAdapter } from "../../registry";
-import { MeeshoAdapter, MEESHO_LAYOUT_V1 } from ".";
+import { MeeshoAdapter, MEESHO_EXCHANGE_LAYOUT_V1, MEESHO_LAYOUT_V1 } from ".";
 
 const FIXTURES = [
   "Sub_Order_Labels_0c77f231-376f-4b40-b41d-cdc02a9a998d.pdf",
@@ -76,7 +76,66 @@ describe("MeeshoAdapter golden fixtures", () => {
     expect(region?.layoutFingerprint).toBeUndefined();
     expect(region?.requiresReview).toBe(true);
   });
+
+  it("retains a Meesho exchange-only label for manual review", async () => {
+    const page = createExchangePage();
+    const analysis: PdfDocumentAnalysis = {
+      documentId: "exchange-document",
+      pages: [page],
+    };
+    const documentContext = createDocumentContext(
+      analysis,
+      "Sub_Order_Labels_exchange.pdf",
+    );
+    const detection = await adapter.detectDocument(documentContext);
+    const selected = await selectMarketplaceAdapter(documentContext);
+    const pageContext = createPageContext(documentContext, page);
+    const classification = await adapter.classifyPage(pageContext);
+    const regions = await adapter.findPrintableRegions(pageContext);
+
+    expect(detection.marketplace).toBe("meesho");
+    expect(detection.layoutFingerprint).toBe(MEESHO_EXCHANGE_LAYOUT_V1);
+    expect(selected.adapter.id).toBe("meesho");
+    expect(classification.pageKind).toBe("shipping_label");
+    expect(classification.layoutFingerprint).toBe(MEESHO_EXCHANGE_LAYOUT_V1);
+    expect(regions).toHaveLength(1);
+    expect(regions[0]?.requiresReview).toBe(true);
+    expect(regions[0]?.boundsPt.height).toBeLessThan(400);
+  });
 });
+
+function createExchangePage(): PdfPageAnalysis {
+  const textItems: PdfTextItem[] = [
+    textItem("Customer Address", 19, 812.44),
+    textItem("If undelivered, return to:", 19, 718.02),
+    textItem("Product Details", 20, 548.16),
+    textItem("Exchange", 261.24, 811.22),
+    textItem("Shadowfax", 265.24, 779.73),
+    textItem("Destination Code", 265.24, 732.76),
+    textItem("Return Code", 265.24, 659.83),
+  ];
+  return {
+    pageId: "exchange-document:page:1",
+    pageNumber: 1,
+    geometry: {
+      widthPt: 595,
+      heightPt: 842,
+      rotation: 0,
+      mediaBox: { x: 0, y: 0, width: 595, height: 842 },
+    },
+    textItems,
+    rasterContentBoundsPt: { x: 16, y: 500, width: 563, height: 326 },
+    rasterInkRatio: 0.12,
+  };
+}
+
+function textItem(text: string, x: number, y: number): PdfTextItem {
+  return {
+    text,
+    transform: [1, 0, 0, 1, x, y],
+    boundsPt: { x, y, width: Math.max(20, text.length * 4), height: 10 },
+  };
+}
 
 async function readFixture(name: string): Promise<PdfDocumentAnalysis> {
   const bytes = new Uint8Array(

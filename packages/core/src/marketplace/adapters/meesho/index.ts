@@ -22,6 +22,7 @@ import {
 import { clampRect, pageContains } from "../../shared";
 
 export const MEESHO_LAYOUT_V1 = "meesho/a4-sub-order-label-invoice/v1";
+export const MEESHO_EXCHANGE_LAYOUT_V1 = "meesho/a4-exchange-label/v1";
 
 const STRUCTURAL_ANCHORS = [
   "customer address",
@@ -29,6 +30,22 @@ const STRUCTURAL_ANCHORS = [
   "product details",
   "tax invoice",
   "original for recipient",
+] as const;
+
+const EXCHANGE_ANCHORS = [
+  "exchange",
+  "customer address",
+  "if undelivered, return to",
+  "product details",
+] as const;
+
+const CARRIER_ANCHORS = [
+  "shadowfax",
+  "valmo",
+  "valmo plus",
+  "delhivery",
+  "xpressbees",
+  "xpress bees",
 ] as const;
 
 export class MeeshoAdapter implements MarketplaceAdapter<
@@ -42,14 +59,20 @@ export class MeeshoAdapter implements MarketplaceAdapter<
     context: DocumentContext<PdfDocumentAnalysis>,
   ): Promise<DetectionResult> {
     const matchedPages = context.document.pages.filter(
-      (page) => anchorCount(page) >= 4,
+      (page) => anchorCount(page) >= 4 || isExchangeLabelPage(page),
     );
     if (matchedPages.length === 0)
       return unknownDetection(this.id, this.version);
 
-    const fingerprintMatched = matchedPages.every(
-      (page) => detectPageFingerprint(page) === MEESHO_LAYOUT_V1,
-    );
+    const pageFingerprints = matchedPages.map(detectPageFingerprint);
+    const fingerprintMatched = pageFingerprints.every(Boolean);
+    const uniqueFingerprints = new Set(pageFingerprints.filter(Boolean));
+    const documentFingerprint =
+      uniqueFingerprints.size === 1
+        ? pageFingerprints.find((fingerprint): fingerprint is string =>
+            Boolean(fingerprint),
+          )
+        : undefined;
     const evidence: Evidence[] = [
       {
         code: "meesho.structure.sub_order_label",
@@ -67,12 +90,16 @@ export class MeeshoAdapter implements MarketplaceAdapter<
         weight: 0.25,
       });
     }
-    if (
-      matchedPages.some(
-        (page) =>
-          pageContains(page, "valmo") || pageContains(page, "delhivery"),
-      )
-    ) {
+    if (matchedPages.some(isExchangeLabelPage)) {
+      evidence.push({
+        code: "meesho.structure.exchange_label",
+        message:
+          "Found the exchange, customer, returns, and product sections used by Meesho exchange labels.",
+        source: "text_anchor",
+        weight: 0.15,
+      });
+    }
+    if (matchedPages.some(hasKnownCarrierAnchor)) {
       evidence.push({
         code: "meesho.carrier.variant",
         message: "Found a confirmed carrier variant within the layout family.",
@@ -87,7 +114,9 @@ export class MeeshoAdapter implements MarketplaceAdapter<
       evidence,
       adapterId: this.id,
       adapterVersion: this.version,
-      ...(fingerprintMatched ? { layoutFingerprint: MEESHO_LAYOUT_V1 } : {}),
+      ...(documentFingerprint
+        ? { layoutFingerprint: documentFingerprint }
+        : {}),
     };
   }
 
@@ -125,6 +154,46 @@ export class MeeshoAdapter implements MarketplaceAdapter<
       };
     }
 
+    if (isExchangeLabelPage(context.page)) {
+      return {
+        marketplace: "meesho",
+        pageKind: "shipping_label",
+        confidence: layoutFingerprint === MEESHO_EXCHANGE_LAYOUT_V1 ? 0.9 : 0.7,
+        evidence: [
+          {
+            code: "meesho.page.exchange_label",
+            message:
+              "The exchange, customer, returns, and product sections identify a Meesho exchange shipping label.",
+            source: "text_anchor",
+            weight: 0.7,
+          },
+          ...(layoutFingerprint === MEESHO_EXCHANGE_LAYOUT_V1
+            ? [
+                {
+                  code: "meesho.layout.exchange.v1",
+                  message:
+                    "Section geometry matches the versioned Meesho exchange-label layout.",
+                  source: "layout_fingerprint" as const,
+                  weight: 0.2,
+                },
+              ]
+            : []),
+          ...(hasKnownCarrierAnchor(context.page)
+            ? [
+                {
+                  code: "meesho.carrier.exchange_variant",
+                  message:
+                    "A known carrier name supports the exchange-label classification but is not used alone.",
+                  source: "text_anchor" as const,
+                  weight: 0.05,
+                },
+              ]
+            : []),
+        ],
+        ...(layoutFingerprint ? { layoutFingerprint } : {}),
+      };
+    }
+
     return {
       marketplace: "meesho",
       pageKind: "unknown",
@@ -144,13 +213,18 @@ export class MeeshoAdapter implements MarketplaceAdapter<
     context: PageContext<PdfDocumentAnalysis, PdfPageAnalysis>,
   ): Promise<readonly RegionDetection[]> {
     const classification = await this.classifyPage(context);
-    if (classification.pageKind !== "shipping_plus_invoice") return [];
+    if (
+      classification.pageKind !== "shipping_plus_invoice" &&
+      classification.pageKind !== "shipping_label"
+    )
+      return [];
 
     const measured = context.page.rasterContentBoundsPt;
     const bounds = measured
       ? clampRect(expandRect(measured, 5), context.geometry.mediaBox)
       : context.geometry.mediaBox;
     const fingerprintMatched = Boolean(classification.layoutFingerprint);
+    const exchangeVariant = classification.pageKind === "shipping_label";
     return [
       {
         id: `${context.pageId}:region:0`,
@@ -158,7 +232,12 @@ export class MeeshoAdapter implements MarketplaceAdapter<
         pageId: context.pageId,
         regionIndex: 0,
         boundsPt: bounds,
-        confidence: measured && fingerprintMatched ? 0.97 : 0.55,
+        confidence:
+          measured && fingerprintMatched
+            ? exchangeVariant
+              ? 0.9
+              : 0.97
+            : 0.55,
         evidence: [
           {
             code: measured
@@ -185,7 +264,9 @@ export class MeeshoAdapter implements MarketplaceAdapter<
         ...(classification.layoutFingerprint
           ? { layoutFingerprint: classification.layoutFingerprint }
           : {}),
-        requiresReview: !measured || !fingerprintMatched,
+        // Exchange-only labels are retained, but require an explicit first-pass
+        // approval while this newer layout family has limited golden coverage.
+        requiresReview: exchangeVariant || !measured || !fingerprintMatched,
       },
     ];
   }
@@ -226,7 +307,7 @@ function detectPageFingerprint(page: PdfPageAnalysis): string | undefined {
   const product = items.get("product details");
   const invoice = items.get("tax invoice");
   const recipient = items.get("original for recipient");
-  const matches =
+  const standardMatches =
     near(page.geometry.widthPt, 595, 3) &&
     near(page.geometry.heightPt, 842, 3) &&
     page.geometry.rotation === 0 &&
@@ -242,7 +323,44 @@ function detectPageFingerprint(page: PdfPageAnalysis): string | undefined {
     near(invoice.y, 483, 5) &&
     near(recipient.x, 495.42, 3) &&
     near(recipient.y, 483, 5);
-  return matches ? MEESHO_LAYOUT_V1 : undefined;
+  if (standardMatches) return MEESHO_LAYOUT_V1;
+
+  const exchange = findAnchorBounds(page, "exchange");
+  const destination = findAnchorBounds(page, "destination code");
+  const exchangeMatches =
+    near(page.geometry.widthPt, 595, 3) &&
+    near(page.geometry.heightPt, 842, 3) &&
+    page.geometry.rotation === 0 &&
+    customer &&
+    product &&
+    exchange &&
+    destination &&
+    near(customer.x, 19, 3) &&
+    near(customer.y, 812.44, 3) &&
+    near(product.x, 20, 3) &&
+    near(product.y, 548.16, 8) &&
+    near(exchange.x, 261.24, 5) &&
+    near(exchange.y, 811.22, 5) &&
+    near(destination.x, 265.24, 5) &&
+    near(destination.y, 732.76, 8);
+  return exchangeMatches ? MEESHO_EXCHANGE_LAYOUT_V1 : undefined;
+}
+
+function isExchangeLabelPage(page: PdfPageAnalysis): boolean {
+  return EXCHANGE_ANCHORS.every((anchor) => pageContains(page, anchor));
+}
+
+function hasKnownCarrierAnchor(page: PdfPageAnalysis): boolean {
+  return CARRIER_ANCHORS.some((anchor) => pageContains(page, anchor));
+}
+
+function findAnchorBounds(
+  page: PdfPageAnalysis,
+  anchor: string,
+): PdfRect | undefined {
+  return page.textItems.find((item) =>
+    item.text.toLowerCase().replaceAll(/\s+/g, " ").includes(anchor),
+  )?.boundsPt;
 }
 
 function expandRect(rect: PdfRect, margin: number): PdfRect {

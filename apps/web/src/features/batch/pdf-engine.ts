@@ -132,6 +132,36 @@ export async function approveReviewLabel(labelId: string): Promise<void> {
   await resolveReviewLabel(labelId, "success");
 }
 
+export async function approveAllReviewLabels(): Promise<number> {
+  const store = useBatchStore.getState();
+  const batch = store.batch;
+  if (!batch) throw new Error("Review batch is unavailable.");
+
+  const reviewIds = new Set(
+    batch.labels
+      .filter((label) => label.status === "review_required")
+      .map((label) => label.id),
+  );
+  if (reviewIds.size === 0) return 0;
+
+  store.setLabels(
+    batch.id,
+    batch.labels.map((label) =>
+      reviewIds.has(label.id) ? withReviewResolution(label, "success") : label,
+    ),
+  );
+  store.appendEvent(batch.id, {
+    batchId: batch.id,
+    stage: "review",
+    status: "success",
+    progress: 1,
+    message: `${reviewIds.size} manual-review label${reviewIds.size === 1 ? "" : "s"} approved together.`,
+    metadata: { approvedCount: reviewIds.size, action: "approve_all" },
+  });
+  await reassembleReadyLabels(batch.id);
+  return reviewIds.size;
+}
+
 export async function skipReviewLabel(labelId: string): Promise<void> {
   await resolveReviewLabel(labelId, "skipped");
 }
@@ -144,26 +174,9 @@ async function resolveReviewLabel(
   const batch = store.batch;
   const label = batch?.labels.find((item) => item.id === labelId);
   if (!batch || !label) throw new Error("Review label is unavailable.");
-  store.updateLabel(batch.id, label.id, (current) => ({
-    ...current,
-    status,
-    region: {
-      ...current.region,
-      requiresReview: false,
-      evidence: [
-        ...current.region.evidence,
-        {
-          code: status === "success" ? "manual.approved" : "manual.skipped",
-          message:
-            status === "success"
-              ? "A user explicitly approved this crop."
-              : "A user explicitly skipped this label.",
-          source: "manual",
-          weight: 1,
-        },
-      ],
-    },
-  }));
+  store.updateLabel(batch.id, label.id, (current) =>
+    withReviewResolution(current, status),
+  );
   store.appendEvent(batch.id, {
     batchId: batch.id,
     documentId: label.documentId,
@@ -177,6 +190,32 @@ async function resolveReviewLabel(
         : "Label skipped; remaining ready labels are unaffected.",
   });
   await reassembleReadyLabels(batch.id);
+}
+
+function withReviewResolution(
+  label: BatchLabel,
+  status: "success" | "skipped",
+): BatchLabel {
+  return {
+    ...label,
+    status,
+    region: {
+      ...label.region,
+      requiresReview: false,
+      evidence: [
+        ...label.region.evidence,
+        {
+          code: status === "success" ? "manual.approved" : "manual.skipped",
+          message:
+            status === "success"
+              ? "A user explicitly approved this crop."
+              : "A user explicitly skipped this label.",
+          source: "manual",
+          weight: 1,
+        },
+      ],
+    },
+  };
 }
 
 async function reassembleReadyLabels(batchId: string): Promise<void> {
@@ -748,6 +787,11 @@ async function classifyAndExtractBatch(
         } catch {
           regions = [fallbackReviewRegion(selection.documentId, pageAnalysis)];
         }
+        regions = retainPageForReview(
+          selection.documentId,
+          pageAnalysis,
+          regions,
+        );
       }
       reviewRegions += regions.filter((region) => region.requiresReview).length;
       extractedPages += 1;
@@ -766,7 +810,13 @@ async function classifyAndExtractBatch(
         classification?.marketplace === "amazon" &&
         classification.pageKind === "seller_invoice";
       const meeshoRegion =
-        classification?.marketplace === "meesho" && regions.length === 1;
+        classification?.marketplace === "meesho" &&
+        classification.pageKind === "shipping_plus_invoice" &&
+        regions.length === 1;
+      const meeshoExchange =
+        classification?.marketplace === "meesho" &&
+        classification.pageKind === "shipping_label" &&
+        regions.length === 1;
       store.appendEvent(batchId, {
         batchId,
         documentId: selection.documentId,
@@ -782,11 +832,13 @@ async function classifyAndExtractBatch(
             ? "Found Amazon shipping label; trimmed measured outer whitespace."
             : amazonInvoice
               ? "Amazon supplier-only invoice excluded."
-              : meeshoRegion
-                ? "Found Meesho package label; retained invoice content and trimmed outer whitespace."
-                : regions.length > 0
-                  ? "Retained a conservative region for manual review."
-                  : "No printable region emitted for this page type.",
+              : meeshoExchange
+                ? "Found Meesho exchange label; trimmed outer whitespace and retained it for review."
+                : meeshoRegion
+                  ? "Found Meesho package label; retained invoice content and trimmed outer whitespace."
+                  : regions.length > 0
+                    ? "Retained a conservative region for manual review."
+                    : "No printable region emitted for this page type.",
         metadata: {
           regionCount: regions.length,
           layoutFingerprint: regions[0]?.layoutFingerprint,
@@ -1473,6 +1525,16 @@ function fallbackReviewRegion(
     ],
     requiresReview: true,
   };
+}
+
+export function retainPageForReview(
+  documentId: string,
+  page: PdfPageAnalysis,
+  regions: readonly RegionDetection[],
+): readonly RegionDetection[] {
+  return regions.length > 0
+    ? regions
+    : [fallbackReviewRegion(documentId, page)];
 }
 
 function toPdfTextItems(items: readonly unknown[]): readonly PdfTextItem[] {

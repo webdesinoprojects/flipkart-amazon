@@ -9,6 +9,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import {
+  approveAllReviewLabels,
   approveReviewLabel,
   redetectReviewLabel,
   skipReviewLabel,
@@ -258,6 +259,20 @@ export function ReviewPanel() {
             >
               APPROVE
             </button>
+            {reviewLabels.length > 1 && (
+              <button
+                disabled={busy}
+                onClick={() =>
+                  void run(async () => {
+                    await approveAllReviewLabels();
+                  }, `${reviewLabels.length} labels approved.`)
+                }
+                title="Approve every label currently waiting for manual review"
+                type="button"
+              >
+                APPROVE ALL ({reviewLabels.length})
+              </button>
+            )}
             <button
               disabled={busy}
               onClick={() => downloadSingleLabel(selected)}
