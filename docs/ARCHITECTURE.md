@@ -4,7 +4,7 @@
 
 The browser is the primary processing and privacy boundary. It ingests a mixed batch, inspects every PDF page, selects a versioned marketplace adapter, creates native PDF crops, validates temporary 203 DPI renders, handles manual review, and assembles the final PDF. Canvas/WebP data is limited to preview, CV, decoding, and review; production pages embed original PDF content.
 
-The server is a proportionate fallback and persistence boundary. FastAPI, PostgreSQL, Celery, Valkey, private temporary storage, and Caddy form one modular monolith plus an asynchronous worker—not a fleet of microservices.
+The server is a proportionate fallback, persistence, and identity boundary. FastAPI, PostgreSQL, Celery, Valkey, private temporary storage, and Caddy form one modular monolith plus an asynchronous worker—not a fleet of microservices. PostgreSQL-backed opaque sessions make FastAPI the sole authentication authority; Next.js only renders identity returned by the API.
 
 ```text
 Browser: files → PDF.js → adapters → pdf-lib native crop → 203 DPI validation
@@ -22,6 +22,8 @@ Fallback: Caddy → FastAPI → PostgreSQL metadata
 apps/web/src/components             Workspace, progress, preview, review, output
 apps/web/src/features/batch         Browser pipeline and state projection
 apps/api/app                        API, jobs, database, storage, vision providers
+apps/api/app/modules/auth           Accounts, sessions, recovery, CSRF, rate limits
+apps/web/src/features/auth          Account forms, protected shell, session controls
 packages/core/src/marketplace       Modular marketplace adapters and registry
 packages/core/src                   Geometry, native PDF, decoding, confidence, events
 packages/config                     Limits and physical print constants
@@ -44,6 +46,8 @@ Output order is upload order → source page order → region order. Input-docum
 ## Security controls
 
 Untrusted uploads have count, byte-size, MIME/magic-byte, page, time, concurrency, and filename limits. Server objects use random private keys and TTL cleanup. Worker/API images run non-root with read-only root filesystems. Raw customer text and barcode payloads are excluded from logs and metadata.
+
+Public registration creates only `user` accounts. The `admin` role can be assigned only by the operator CLI. Argon2id protects passwords; only HMAC digests of opaque session and one-time tokens reach PostgreSQL. Session-bound CSRF and trusted-origin checks protect authenticated mutations. Server-fallback batches are owned by the authenticated user and return 404 across account boundaries.
 
 ## Key libraries
 

@@ -8,11 +8,21 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session, selectinload
 
+from .capabilities.email.provider import EmailProvider
 from .config import Settings
 from .database import SessionLocal, get_session
-from .dependencies import get_queue, get_storage, settings_dependency
+from .dependencies import (
+    get_email_provider,
+    get_queue,
+    get_rate_limiter,
+    get_storage,
+    settings_dependency,
+)
 from .events import append_event, serialize_event
 from .models import BatchRecord, DocumentRecord, ProcessingEventRecord
+from .modules.auth.dependencies import CurrentSessionDep, ProtectedMutationDep
+from .platform.database.migrations import migration_status
+from .platform.rate_limit.limiter import RateLimiter
 from .providers.queue import TaskQueue
 from .providers.storage import StorageProvider
 from .schemas import BatchOut, DocumentOut, ProcessingEventOut, ProviderStatus
@@ -24,16 +34,37 @@ SessionDep = Annotated[Session, Depends(get_session)]
 SettingsDep = Annotated[Settings, Depends(settings_dependency)]
 StorageDep = Annotated[StorageProvider, Depends(get_storage)]
 QueueDep = Annotated[TaskQueue, Depends(get_queue)]
+EmailDep = Annotated[EmailProvider, Depends(get_email_provider)]
+LimiterDep = Annotated[RateLimiter, Depends(get_rate_limiter)]
 
 
 @router.get("/health/live")
 def live() -> dict[str, str]:
+    """Liveness only: no dependency fan-out, so a slow database cannot restart us."""
     return {"status": "ok"}
 
 
 @router.get("/health/ready")
-def ready(session: SessionDep, settings: SettingsDep) -> ProviderStatus:
+def ready(
+    session: SessionDep,
+    settings: SettingsDep,
+    email_provider: EmailDep,
+    limiter: LimiterDep,
+) -> ProviderStatus:
+    """Readiness with bounded checks.
+
+    Database reachability and schema freshness are required for authentication,
+    so they are reported here. An unconfigured email provider and an
+    unreachable rate-limit backend are reported as degraded rather than fatal:
+    the dashboard, browser-local PDF workflow, and sign-in all still work.
+    """
     session.execute(text("SELECT 1"))
+    migrations = migration_status(session.get_bind())
+    rate_limit_state = (
+        "disabled"
+        if not settings.rate_limit_enabled
+        else ("valkey" if limiter.available else "degraded")
+    )
     return ProviderStatus(
         database=settings.database_provider,
         storage=settings.effective_storage_provider,
@@ -41,13 +72,23 @@ def ready(session: SessionDep, settings: SettingsDep) -> ProviderStatus:
         imagekit_enabled=settings.imagekit_enabled,
         ai_enabled=settings.cloud_ai_enabled,
         vision_providers=[provider.id for provider in build_vision_providers(settings)],
+        migrations=migrations,
+        auth="ready" if migrations == "up_to_date" else "degraded",
+        email_provider=email_provider.id,
+        email_available=email_provider.available,
+        rate_limit=rate_limit_state,
     )
 
 
 @router.post("/api/v1/batches", response_model=BatchOut, status_code=status.HTTP_201_CREATED)
-def create_batch(session: SessionDep, settings: SettingsDep) -> BatchOut:
+def create_batch(
+    session: SessionDep, settings: SettingsDep, authenticated: ProtectedMutationDep
+) -> BatchOut:
     now = datetime.now(UTC)
-    batch = BatchRecord(expires_at=now + timedelta(seconds=settings.temp_file_ttl_seconds))
+    batch = BatchRecord(
+        user_id=authenticated.user.id,
+        expires_at=now + timedelta(seconds=settings.temp_file_ttl_seconds),
+    )
     session.add(batch)
     session.flush()
     append_event(
@@ -73,9 +114,15 @@ async def upload_fallback_document(
     settings: SettingsDep,
     storage: StorageDep,
     queue: QueueDep,
+    authenticated: ProtectedMutationDep,
     file: Annotated[UploadFile, File(description="Untrusted PDF fallback input")],
 ) -> DocumentOut:
-    batch = session.get(BatchRecord, batch_id)
+    batch = session.scalar(
+        select(BatchRecord).where(
+            BatchRecord.id == batch_id,
+            BatchRecord.user_id == authenticated.user.id,
+        )
+    )
     if batch is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Batch not found")
     document_count = session.scalar(
@@ -135,11 +182,14 @@ async def upload_fallback_document(
 
 
 @router.get("/api/v1/batches/{batch_id}", response_model=BatchOut)
-def get_batch(batch_id: str, session: SessionDep) -> BatchOut:
+def get_batch(batch_id: str, session: SessionDep, authenticated: CurrentSessionDep) -> BatchOut:
     batch = session.scalar(
         select(BatchRecord)
         .options(selectinload(BatchRecord.documents))
-        .where(BatchRecord.id == batch_id)
+        .where(
+            BatchRecord.id == batch_id,
+            BatchRecord.user_id == authenticated.user.id,
+        )
     )
     if batch is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Batch not found")
@@ -147,8 +197,21 @@ def get_batch(batch_id: str, session: SessionDep) -> BatchOut:
 
 
 @router.get("/api/v1/batches/{batch_id}/events", response_model=list[ProcessingEventOut])
-def get_events(batch_id: str, session: SessionDep, after: int = -1) -> list[ProcessingEventOut]:
-    if session.get(BatchRecord, batch_id) is None:
+def get_events(
+    batch_id: str,
+    session: SessionDep,
+    authenticated: CurrentSessionDep,
+    after: int = -1,
+) -> list[ProcessingEventOut]:
+    if (
+        session.scalar(
+            select(BatchRecord.id).where(
+                BatchRecord.id == batch_id,
+                BatchRecord.user_id == authenticated.user.id,
+            )
+        )
+        is None
+    ):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Batch not found")
     records = session.scalars(
         select(ProcessingEventRecord)
@@ -162,8 +225,21 @@ def get_events(batch_id: str, session: SessionDep, after: int = -1) -> list[Proc
 
 
 @router.get("/api/v1/batches/{batch_id}/events/stream")
-def stream_events(batch_id: str, session: SessionDep, after: int = -1) -> StreamingResponse:
-    if session.get(BatchRecord, batch_id) is None:
+def stream_events(
+    batch_id: str,
+    session: SessionDep,
+    authenticated: CurrentSessionDep,
+    after: int = -1,
+) -> StreamingResponse:
+    if (
+        session.scalar(
+            select(BatchRecord.id).where(
+                BatchRecord.id == batch_id,
+                BatchRecord.user_id == authenticated.user.id,
+            )
+        )
+        is None
+    ):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Batch not found")
 
     async def event_source():

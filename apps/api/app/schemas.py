@@ -58,3 +58,10 @@ class ProviderStatus(BaseModel):
     imagekit_enabled: bool
     ai_enabled: bool
     vision_providers: list[str]
+    migrations: Literal["up_to_date", "pending", "not_initialized", "unknown"]
+    """Whether the schema matches the code this instance is running."""
+    auth: Literal["ready", "degraded"]
+    email_provider: str
+    email_available: bool
+    """False is normal locally; it never prevents boot, and the UI says so."""
+    rate_limit: Literal["valkey", "degraded", "disabled"]

@@ -7,6 +7,7 @@ from .config import get_settings
 from .database import SessionLocal
 from .events import append_event
 from .models import BatchRecord, DocumentRecord
+from .modules.auth.cleanup import purge_expired_auth_rows
 from .pdf_inspection import inspect_pdf
 from .providers.storage import build_storage
 
@@ -90,6 +91,22 @@ def process_document(self, document_id: str) -> dict[str, str | int]:
             )
             session.commit()
             return {"status": "failed", "document_id": document_id}
+
+
+@celery_app.task(name="auth.cleanup_expired")
+def cleanup_expired_auth() -> dict[str, int]:
+    """Reclaim expired sessions and one-time tokens.
+
+    Idempotent: expired rows are already excluded from every lookup, so running
+    twice, skipping a run, or failing cannot affect sign-in. The counts are
+    returned and logged so a silently failing cleanup is still observable.
+    """
+    with SessionLocal() as session:
+        report = purge_expired_auth_rows(session)
+    return {
+        "sessions_removed": report.sessions_removed,
+        "tokens_removed": report.tokens_removed,
+    }
 
 
 @celery_app.task(name="storage.cleanup_expired")

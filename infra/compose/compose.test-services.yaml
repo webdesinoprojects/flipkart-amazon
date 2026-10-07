@@ -1,0 +1,17 @@
+# Loopback-only port bindings for running the PostgreSQL and Valkey integration
+# tests from the host.
+#
+#   docker compose -f compose.yaml -f infra/compose/compose.test-services.yaml up -d postgres valkey
+#
+# The base compose file deliberately publishes no database or broker port. These
+# bindings are explicitly 127.0.0.1-only, so they are reachable from this machine
+# and from nowhere else. Never merge this file into a deployment.
+
+services:
+  postgres:
+    ports:
+      - "127.0.0.1:55432:5432"
+
+  valkey:
+    ports:
+      - "127.0.0.1:56379:6379"

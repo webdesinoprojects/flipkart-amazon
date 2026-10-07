@@ -302,3 +302,28 @@ The authorized local fixture set contains:
 - The current real 25-page Meesho batch was checked read-only: 1 exchange label plus 24 label-and-invoice pages produced 25 printable regions, with the exchange page retained for review.
 - Full Vitest suite: 48 tests passed across 18 files. ESLint, targeted Prettier checks, TypeScript/Next.js production build, and local Docker health checks passed.
 - Added an explicit `APPROVE ALL` review action that records manual evidence for every current review item and rebuilds the combined PDF once, while preserving individual approve, re-detect, download, and skip controls.
+
+## SaaS release R3 — self-hosted authentication foundation
+
+**Status:** Complete
+
+### Major decisions
+
+- FastAPI is the only identity and authorization authority. PostgreSQL stores users, opaque revocable sessions, single-use recovery tokens, and sanitized security events.
+- The account model has exactly `user` and `admin` roles. Public registration cannot choose a role; the first administrator is created or promoted only through a password-safe operator CLI.
+- Argon2id password hashing, host-only HttpOnly session cookies, session-bound CSRF, trusted-origin checks, Valkey-backed abuse limits, idle/absolute expiry, device session management, and password-reset revocation are implemented as modular backend capabilities.
+- `/app` now moves through the authenticated `/dashboard/labels` route. The original local PDF Workspace remains a single implementation. `/dashboard/security` manages sessions; `/admin` proves backend authorization while intentionally deferring the full admin product.
+- Alembic replaces startup `create_all`. A one-shot Compose migration gate runs before API and worker, while Mailpit provides a no-cost local email verification and reset path.
+- Server-fallback batches are owned by the authenticated user. Cross-user batch lookup returns 404 and authenticated mutations also require CSRF.
+
+### Tests and verification
+
+- Backend suite: 251 passed and 18 optional-service tests skipped; a separate real PostgreSQL/Valkey integration run passed all 18 tests covering migrations, schema drift, concurrency, token consumption, and revocation races.
+- Frontend suite: 59 tests across 21 files passed, including protected return-target validation. Typecheck, ESLint, phase-file Prettier, production build, Ruff lint/format, and Docker Compose configuration passed.
+- A fresh isolated Compose project built and started every service. Live checks confirmed migrations `up_to_date`, auth `ready`, registration email captured by Mailpit, login, a `user` identity, CSRF-protected owned-batch creation, and the protected dashboard through Caddy.
+- Browser automation was explicitly deferred by the product owner for this phase; visual and flow acceptance will be performed manually.
+
+### Limitations and risks
+
+- A full user/credits/plans/payments/logs admin panel, billing, quota enforcement, MFA, and external SMTP deliverability are later release phases.
+- Local Mailpit captures mail but does not deliver it. Production verification/reset requires a configured SMTP provider.

@@ -22,14 +22,33 @@ def test_optional_providers_are_disabled_without_keys(client):
         "imagekit_enabled": False,
         "ai_enabled": False,
         "vision_providers": [],
+        # Readiness now also reports the authentication dependencies. A missing
+        # email provider and an absent rate-limit backend are degraded states,
+        # never boot failures.
+        "migrations": "not_initialized",
+        "auth": "degraded",
+        "email_provider": "disabled",
+        "email_available": False,
+        "rate_limit": "disabled",
     }
 
 
-def test_upload_is_sanitized_private_bounded_and_queued(client):
-    test_client, queue, storage_root = client
-    batch = test_client.post("/api/v1/batches").json()
+def authenticated_fallback(auth_env):
+    csrf = auth_env.create_account("fallback@example.com")
+    return (
+        auth_env.client,
+        auth_env.queue,
+        auth_env.storage_root,
+        auth_env.csrf_headers(csrf),
+    )
+
+
+def test_upload_is_sanitized_private_bounded_and_queued(auth_env):
+    test_client, queue, storage_root, headers = authenticated_fallback(auth_env)
+    batch = test_client.post("/api/v1/batches", headers=headers).json()
     response = test_client.post(
         f"/api/v1/batches/{batch['id']}/documents",
+        headers=headers,
         files={"file": ("../../Customer Address (1).pdf", minimal_pdf(), "application/pdf")},
     )
     assert response.status_code == 202
@@ -46,23 +65,38 @@ def test_upload_is_sanitized_private_bounded_and_queued(client):
     assert "Address" not in str(events)
 
 
-def test_invalid_document_does_not_remove_existing_batch(client):
-    test_client, _, _ = client
-    batch = test_client.post("/api/v1/batches").json()
+def test_invalid_document_does_not_remove_existing_batch(auth_env):
+    test_client, _, _, headers = authenticated_fallback(auth_env)
+    batch = test_client.post("/api/v1/batches", headers=headers).json()
     response = test_client.post(
         f"/api/v1/batches/{batch['id']}/documents",
+        headers=headers,
         files={"file": ("bad.pdf", b"not a pdf", "application/pdf")},
     )
     assert response.status_code == 415
     assert test_client.get(f"/api/v1/batches/{batch['id']}").status_code == 200
 
 
-def test_file_limit_is_enforced(client):
-    test_client, _, _ = client
-    batch = test_client.post("/api/v1/batches").json()
+def test_file_limit_is_enforced(auth_env):
+    test_client, _, _, headers = authenticated_fallback(auth_env)
+    batch = test_client.post("/api/v1/batches", headers=headers).json()
     oversized = b"%PDF-" + b"x" * 5000
     response = test_client.post(
         f"/api/v1/batches/{batch['id']}/documents",
+        headers=headers,
         files={"file": ("too-large.pdf", oversized, "application/pdf")},
     )
     assert response.status_code == 413
+
+
+def test_server_fallback_requires_authentication(client):
+    test_client, _, _ = client
+    assert test_client.post("/api/v1/batches").status_code == 401
+
+
+def test_batch_is_not_visible_to_another_user(auth_env):
+    test_client, _, _, headers = authenticated_fallback(auth_env)
+    batch_id = test_client.post("/api/v1/batches", headers=headers).json()["id"]
+    test_client.cookies.clear()
+    auth_env.create_account("someone-else@example.com")
+    assert test_client.get(f"/api/v1/batches/{batch_id}").status_code == 404

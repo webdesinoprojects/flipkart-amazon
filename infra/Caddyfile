@@ -6,9 +6,17 @@
 :8080 {
 	encode zstd gzip
 
+	handle /mailpit/* {
+		reverse_proxy mailpit:8025
+	}
+
 	@api path /api/* /health/* /docs /docs/* /openapi.json
-	reverse_proxy @api api:8000
-	reverse_proxy web:3000
+	handle @api {
+		reverse_proxy api:8000
+	}
+	handle {
+		reverse_proxy web:3000
+	}
 
 	header {
 		-Server

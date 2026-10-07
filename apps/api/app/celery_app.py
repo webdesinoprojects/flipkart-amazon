@@ -23,6 +23,13 @@ celery_app.conf.update(
         "cleanup-temporary-files": {
             "task": "storage.cleanup_expired",
             "schedule": 600.0,
-        }
+        },
+        # Expired sessions and one-time tokens are already unusable; this job
+        # only reclaims rows, so an hourly cadence is sufficient and a missed
+        # run has no security consequence.
+        "cleanup-expired-auth-rows": {
+            "task": "auth.cleanup_expired",
+            "schedule": 3600.0,
+        },
     },
 )

@@ -1,0 +1,174 @@
+.shell {
+  min-height: 100vh;
+}
+.header {
+  position: sticky;
+  z-index: 20;
+  top: 0;
+  min-height: 64px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 24px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--border-strong);
+  background: rgba(5, 5, 5, 0.97);
+}
+.header nav {
+  display: flex;
+  align-self: stretch;
+}
+.header nav a {
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+  border-inline: 1px solid transparent;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-decoration: none;
+}
+.header nav a[data-active="true"] {
+  border-color: var(--border);
+  color: var(--text);
+  background: var(--surface);
+}
+.account {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+}
+.account span {
+  max-width: 210px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.account button {
+  border: 1px solid var(--border);
+  border-radius: 0;
+  padding: 9px 11px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 800;
+}
+.content {
+  min-height: calc(100vh - 64px);
+}
+.content :global(.app-shell) {
+  min-height: calc(100vh - 64px);
+}
+.panel {
+  width: min(1100px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 54px 0 96px;
+}
+.panelHead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid var(--border-strong);
+}
+.panelHead h1 {
+  margin: 12px 0 0;
+  font-size: clamp(38px, 6vw, 76px);
+  letter-spacing: -0.08em;
+  line-height: 0.95;
+}
+.eyebrow {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+.sessions {
+  margin-top: 30px;
+  border: 1px solid var(--border);
+}
+.session {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr auto;
+  align-items: center;
+  gap: 20px;
+  min-height: 84px;
+  padding: 16px 18px;
+}
+.session + .session {
+  border-top: 1px solid var(--border);
+}
+.session strong,
+.session span {
+  overflow-wrap: anywhere;
+}
+.session span,
+.session small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.session button {
+  border: 1px solid var(--border);
+  border-radius: 0;
+  padding: 10px 12px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 10px;
+}
+.status {
+  min-height: 22px;
+  margin: 18px 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+.adminGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  margin-top: 30px;
+  border: 1px solid var(--border);
+  background: var(--border);
+}
+.adminGrid article {
+  min-height: 150px;
+  padding: 24px;
+  background: var(--background);
+}
+.adminGrid h2 {
+  margin: 0 0 14px;
+  font-size: 16px;
+}
+.adminGrid p {
+  color: var(--muted);
+  line-height: 1.7;
+}
+@media (max-width: 760px) {
+  .header {
+    grid-template-columns: 1fr auto;
+    padding: 12px 14px;
+  }
+  .header nav {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    order: 3;
+    border-top: 1px solid var(--border);
+  }
+  .account span {
+    display: none;
+  }
+  .session {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .adminGrid {
+    grid-template-columns: 1fr;
+  }
+}
