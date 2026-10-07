@@ -1,0 +1,221 @@
+.kicker {
+  display: block;
+  color: #777771;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+}
+
+.planTop,
+.planLimit > span,
+.footerBottom {
+  font-family: var(--font-mono);
+  letter-spacing: 0.07em;
+}
+
+.pricingSection {
+  padding: clamp(70px, 8vw, 120px) clamp(20px, 6vw, 90px);
+  scroll-margin-top: 110px;
+}
+.sectionIntro {
+  max-width: 650px;
+  margin-bottom: 50px;
+}
+.sectionIntro h2,
+.privacySection h2,
+.finalCta h2 {
+  margin: 18px 0;
+  font-size: clamp(40px, 5.2vw, 70px);
+  line-height: 1.03;
+  font-weight: 900;
+  letter-spacing: -0.075em;
+}
+.sectionIntro > p {
+  max-width: 520px;
+  color: #62625d;
+  font-size: 16px;
+  line-height: 1.6;
+}
+.pricingGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 13px;
+}
+.pricingSection {
+  background: #151515;
+  color: #f6f6f0;
+}
+.pricingSection .sectionIntro > p {
+  color: #b3b3ad;
+}
+.plan,
+.planFeatured {
+  display: flex;
+  flex-direction: column;
+  min-height: 410px;
+  padding: 26px;
+  border: 1px solid #55554f;
+}
+.planFeatured {
+  background: #f4f4ef;
+  color: #111;
+  border-color: #f4f4ef;
+}
+.planTop {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+}
+.planPrice {
+  margin: 49px 0 8px;
+  font-size: clamp(43px, 5vw, 64px);
+  font-weight: 900;
+  letter-spacing: -0.08em;
+}
+.planPrice span {
+  margin-left: 5px;
+  color: #999993;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.planDescription {
+  margin: 0;
+  color: #aaa9a3;
+  font-size: 13px;
+}
+.planFeatured .planDescription {
+  color: #696963;
+}
+.planLimit {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 25px;
+  border-top: 1px solid #767670;
+}
+.planLimit > span {
+  color: #aaa9a3;
+  font-size: 10px;
+}
+.planLimit strong {
+  font-size: 14px;
+}
+.planButton {
+  justify-content: space-between;
+  margin-top: 24px;
+  background: #f4f4ef;
+  color: #111;
+}
+.planFeatured .planButton {
+  background: #111;
+  color: #fff;
+}
+.privacySection {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 50px;
+  padding: clamp(70px, 8vw, 110px) clamp(20px, 6vw, 90px);
+  border-bottom: 1px solid var(--line);
+  scroll-margin-top: 110px;
+}
+.privacyCopy {
+  align-self: end;
+  max-width: 520px;
+  color: #5c5c57;
+  font-size: 17px;
+  line-height: 1.6;
+}
+.finalCta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: clamp(90px, 10vw, 150px) 20px;
+  background: #e9e9e4;
+}
+.finalCta h2 {
+  margin: 25px 0 35px;
+}
+.buttonLight {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 46px;
+  padding: 0 18px;
+  background: #111;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+}
+.buttonLight:hover {
+  background: #393939;
+}
+.finalCta .buttonLight {
+  background: #111;
+  color: #fff;
+}
+.footer {
+  padding: 60px clamp(20px, 6vw, 90px) 25px;
+  background: #111;
+  color: #eee;
+}
+.footerTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 30px;
+  padding-bottom: 75px;
+}
+.footerTop p {
+  max-width: 260px;
+  color: #a4a49f;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.footer nav {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(100px, 1fr));
+  gap: 14px 35px;
+}
+.footer nav a {
+  color: #e3e3de;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+.footerBottom {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding-top: 22px;
+  border-top: 1px solid #50504c;
+  color: #999994;
+  font-size: 10px;
+}
+@media (max-width: 780px) {
+  .privacySection {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}
+@media (max-width: 560px) {
+  .pricingGrid {
+    grid-template-columns: 1fr;
+  }
+  .sectionIntro {
+    margin-bottom: 30px;
+  }
+  .footerTop,
+  .footerBottom {
+    flex-direction: column;
+  }
+  .footerTop {
+    padding-bottom: 45px;
+  }
+}

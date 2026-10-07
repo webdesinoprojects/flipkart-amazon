@@ -1,0 +1,157 @@
+.section,
+.marketSection,
+.pricingSection {
+  padding: clamp(70px, 8vw, 120px) clamp(20px, 6vw, 90px);
+  scroll-margin-top: 110px;
+}
+.sectionIntro {
+  max-width: 650px;
+  margin-bottom: 50px;
+}
+.kicker {
+  display: block;
+  color: #777771;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+}
+.sectionIntro h2,
+.privacySection h2,
+.finalCta h2 {
+  margin: 18px 0;
+  font-size: clamp(40px, 5.2vw, 70px);
+  line-height: 1.03;
+  font-weight: 900;
+  letter-spacing: -0.075em;
+}
+.sectionIntro > p {
+  max-width: 520px;
+  color: #62625d;
+  font-size: 16px;
+  line-height: 1.6;
+}
+.workflowGrid,
+.pricingGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 13px;
+}
+.workflowCard {
+  min-height: 340px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 28px;
+  background: #edede8;
+  border: 1px solid var(--line);
+}
+.cardNumber {
+  color: #70706a;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.07em;
+}
+.workflowGlyph {
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  margin: 35px 0 21px;
+  border: 1px solid #bdbdb7;
+  font-size: 43px;
+  font-weight: 100;
+}
+.workflowCard h3,
+.marketCard h3 {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: -0.06em;
+}
+.workflowCard p,
+.marketCard p {
+  max-width: 350px;
+  margin: 15px 0 0;
+  color: #666660;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.marketSection {
+  background: #e9e9e4;
+}
+.marketGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  background: #c9c9c2;
+  border: 1px solid #c9c9c2;
+}
+.marketCard {
+  min-height: 235px;
+  padding: 28px;
+  background: #f4f4ef;
+}
+.marketCard h3 {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 36px;
+  font-size: 29px;
+}
+.marketCard h3 span {
+  font-size: 18px;
+  font-weight: 400;
+}
+.featuresLayout {
+  display: grid;
+  grid-template-columns: minmax(250px, 0.8fr) minmax(0, 1.2fr);
+  gap: 60px;
+}
+.featureList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid #bdbdb7;
+}
+.featureList li {
+  display: grid;
+  grid-template-columns: 36px 1fr 20px;
+  align-items: center;
+  gap: 10px;
+  min-height: 53px;
+  border-bottom: 1px solid #bdbdb7;
+  font-size: 14px;
+  font-weight: 700;
+}
+.featureList li span {
+  color: #777771;
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+.featureList li span:last-child {
+  text-align: right;
+  font-size: 15px;
+}
+@media (max-width: 780px) {
+  .featuresLayout {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}
+@media (max-width: 560px) {
+  .workflowGrid,
+  .marketGrid {
+    grid-template-columns: 1fr;
+  }
+  .workflowCard {
+    min-height: 270px;
+  }
+  .workflowGlyph {
+    margin: 20px 0;
+  }
+  .sectionIntro {
+    margin-bottom: 30px;
+  }
+  .marketCard {
+    min-height: 200px;
+  }
+}

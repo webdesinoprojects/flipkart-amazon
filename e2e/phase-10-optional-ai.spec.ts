@@ -21,7 +21,7 @@ test.describe("Phase 10 optional vision fallback", () => {
       queue: "celery-valkey",
     });
 
-    await page.goto(serverBaseUrl!);
+    await page.goto(`${serverBaseUrl}/app`);
     await expect(page.getByText("PHASE 10")).toBeVisible();
     await expect(page.getByText("01 / LOCAL PROCESSING")).toBeVisible();
     await expect(page.getByText("02 / PDF-NATIVE OUTPUT")).toBeVisible();

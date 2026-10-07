@@ -11,7 +11,7 @@ const fixtures = [
 test("normalizes and assembles every discovered label natively", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/app");
   await page.locator('input[type="file"]').setInputFiles(
     await Promise.all(
       fixtures.map(async (fixture) => ({

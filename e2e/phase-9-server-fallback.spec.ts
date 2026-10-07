@@ -91,7 +91,7 @@ test.describe("Phase 9 Docker server fallback", () => {
       ]),
     );
 
-    await page.goto(serverBaseUrl!);
+    await page.goto(`${serverBaseUrl}/app`);
     await expect(
       page.getByRole("heading", { name: "INSPECT EVERY SOURCE PAGE." }),
     ).toBeVisible();

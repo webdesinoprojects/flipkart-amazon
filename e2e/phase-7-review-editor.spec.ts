@@ -4,7 +4,7 @@ import { PDFDocument, StandardFonts } from "pdf-lib";
 test("edits, rotates, re-detects, downloads, and approves a review label", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/app");
   await page.locator('input[type="file"]').setInputFiles({
     name: "unknown-layout.pdf",
     mimeType: "application/pdf",
@@ -63,7 +63,7 @@ test("edits, rotates, re-detects, downloads, and approves a review label", async
 });
 
 test("skips an uncertain label without failing the batch", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/app");
   await page.locator('input[type="file"]').setInputFiles({
     name: "skip-layout.pdf",
     mimeType: "application/pdf",

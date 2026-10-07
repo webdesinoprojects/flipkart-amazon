@@ -116,8 +116,8 @@ const structuredData = {
     },
     {
       "@type": "WebApplication",
-      "@id": `${absoluteUrl("/")}#application`,
-      url: absoluteUrl("/"),
+      "@id": `${absoluteUrl("/app")}#application`,
+      url: absoluteUrl("/app"),
       name: SITE_NAME,
       alternateName: "Marketplace Shipping Label Normalizer",
       description: SITE_DESCRIPTION,
@@ -159,7 +159,7 @@ export default function RootLayout({
   readonly children: ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" data-scroll-behavior="smooth">
       <body>
         <script
           type="application/ld+json"

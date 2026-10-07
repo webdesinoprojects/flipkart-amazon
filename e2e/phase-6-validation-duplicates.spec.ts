@@ -14,7 +14,7 @@ const duplicate = path.resolve(
 test("validates at 203 DPI and warns without deleting a duplicate", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/app");
   await page.locator('input[type="file"]').setInputFiles([
     {
       name: path.basename(first),

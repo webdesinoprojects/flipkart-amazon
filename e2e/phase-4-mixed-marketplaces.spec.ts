@@ -17,7 +17,7 @@ const fixtures = [
 test("processes a real mixed marketplace batch in one operation", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/app");
   await page.locator('input[type="file"]').setInputFiles(
     await Promise.all(
       fixtures.map(async (fixture) => ({

@@ -13,7 +13,7 @@ const amazonFixture = path.resolve(
 test("keeps the Amazon label and excludes its supplier invoice", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/app");
   await page.locator('input[type="file"]').setInputFiles({
     name: path.basename(amazonFixture),
     mimeType: "application/pdf",

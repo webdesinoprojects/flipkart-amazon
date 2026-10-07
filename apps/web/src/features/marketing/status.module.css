@@ -1,0 +1,31 @@
+.statusPage {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 100vh;
+  padding: clamp(24px, 8vw, 110px);
+  background: #111;
+  color: #f5f5ef;
+  font-family: Arial, Helvetica, sans-serif;
+}
+.statusPage h1 {
+  max-width: 790px;
+  margin: 25px 0 0;
+  font-size: clamp(42px, 8vw, 92px);
+  line-height: 1;
+  letter-spacing: -0.08em;
+}
+.statusPage p {
+  max-width: 500px;
+  color: #c1c1bb;
+  font-size: 16px;
+  line-height: 1.6;
+}
+.statusPage .statusDigest {
+  font-size: 11px;
+}
+.statusPage button {
+  border: 0;
+  cursor: pointer;
+}

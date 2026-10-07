@@ -12,7 +12,7 @@ const fixtures = [
 test("previews, downloads, and invokes print for the final mixed PDF", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/app");
   await page.locator('input[type="file"]').setInputFiles(
     await Promise.all(
       fixtures.map(async (fixture) => ({

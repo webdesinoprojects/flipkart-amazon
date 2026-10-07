@@ -13,7 +13,7 @@ const flipkartFixture = path.resolve(
 test("processes every Flipkart page while isolating an invalid PDF", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/app");
   const flipkartBytes = await readFile(flipkartFixture);
   await page.locator('input[type="file"]').setInputFiles([
     {
