@@ -16,6 +16,7 @@ Thumbs.db
 tmp/
 .venv/
 .ruff_cache/
+dev/agent-handoffs/
 
 # Real shipping fixtures can contain customer/seller PII. Keep them local unless
 # a separately anonymized synthetic fixture is explicitly approved for commit.
