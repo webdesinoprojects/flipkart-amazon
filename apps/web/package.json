@@ -12,6 +12,7 @@
     "@label-normalizer/config": "*",
     "@label-normalizer/core": "*",
     "@label-normalizer/ui": "*",
+    "@radix-ui/react-dialog": "1.2.0",
     "@tailwindcss/postcss": "4.3.3",
     "next": "16.3.1",
     "pdf-lib": "1.17.1",

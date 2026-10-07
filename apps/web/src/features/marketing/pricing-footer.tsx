@@ -107,7 +107,7 @@ export function PricingFooter() {
       <footer className={styles.footer}>
         <div className={styles.footerTop}>
           <div>
-            <Logo />
+            <Logo wordmark />
             <p>Marketplace shipping labels, prepared for the printer.</p>
           </div>
           <nav aria-label="Footer navigation">

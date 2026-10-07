@@ -1,6 +1,6 @@
 .kicker {
   display: block;
-  color: #777771;
+  color: var(--landing-muted);
   font-family: var(--font-mono);
   font-size: 10px;
   font-weight: 700;
@@ -26,14 +26,15 @@
 .privacySection h2,
 .finalCta h2 {
   margin: 18px 0;
-  font-size: clamp(40px, 5.2vw, 70px);
-  line-height: 1.03;
-  font-weight: 900;
-  letter-spacing: -0.075em;
+  font-family: var(--font-display);
+  font-size: clamp(36px, 5vw, 66px);
+  line-height: 1.1;
+  font-weight: 400;
+  letter-spacing: -0.04em;
 }
 .sectionIntro > p {
   max-width: 520px;
-  color: #62625d;
+  color: var(--landing-muted);
   font-size: 16px;
   line-height: 1.6;
 }
@@ -43,11 +44,11 @@
   gap: 13px;
 }
 .pricingSection {
-  background: #151515;
-  color: #f6f6f0;
+  background: var(--landing-price-bg);
+  color: var(--landing-price-text);
 }
 .pricingSection .sectionIntro > p {
-  color: #b3b3ad;
+  color: var(--landing-muted);
 }
 .plan,
 .planFeatured {
@@ -55,12 +56,12 @@
   flex-direction: column;
   min-height: 410px;
   padding: 26px;
-  border: 1px solid #55554f;
+  border: 1px solid var(--landing-line);
 }
 .planFeatured {
-  background: #f4f4ef;
-  color: #111;
-  border-color: #f4f4ef;
+  background: var(--landing-card);
+  color: var(--landing-text);
+  border-color: var(--landing-line);
 }
 .planTop {
   display: flex;
@@ -69,13 +70,14 @@
 }
 .planPrice {
   margin: 49px 0 8px;
-  font-size: clamp(43px, 5vw, 64px);
-  font-weight: 900;
-  letter-spacing: -0.08em;
+  font-family: var(--font-display);
+  font-size: clamp(39px, 5vw, 60px);
+  font-weight: 400;
+  letter-spacing: -0.04em;
 }
 .planPrice span {
   margin-left: 5px;
-  color: #999993;
+  color: var(--landing-muted);
   font-family: var(--font-mono);
   font-size: 13px;
   font-weight: 400;
@@ -83,11 +85,11 @@
 }
 .planDescription {
   margin: 0;
-  color: #aaa9a3;
+  color: var(--landing-muted);
   font-size: 13px;
 }
 .planFeatured .planDescription {
-  color: #696963;
+  color: var(--landing-muted);
 }
 .planLimit {
   display: flex;
@@ -95,24 +97,32 @@
   gap: 10px;
   margin-top: auto;
   padding-top: 25px;
-  border-top: 1px solid #767670;
+  border-top: 1px solid var(--landing-line);
 }
 .planLimit > span {
-  color: #aaa9a3;
+  color: var(--landing-muted);
   font-size: 10px;
 }
 .planLimit strong {
   font-size: 14px;
 }
 .planButton {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
   justify-content: space-between;
+  gap: 14px;
   margin-top: 24px;
-  background: #f4f4ef;
-  color: #111;
+  padding: 0 18px;
+  border-radius: 999px;
+  background: var(--landing-button-bg);
+  color: var(--landing-button-text);
+  font-size: 12px;
+  font-weight: 600;
 }
 .planFeatured .planButton {
-  background: #111;
-  color: #fff;
+  background: var(--landing-button-bg);
+  color: var(--landing-button-text);
 }
 .privacySection {
   display: grid;
@@ -125,7 +135,7 @@
 .privacyCopy {
   align-self: end;
   max-width: 520px;
-  color: #5c5c57;
+  color: var(--landing-muted);
   font-size: 17px;
   line-height: 1.6;
 }
@@ -135,7 +145,7 @@
   align-items: center;
   text-align: center;
   padding: clamp(90px, 10vw, 150px) 20px;
-  background: #e9e9e4;
+  background: var(--landing-alt);
 }
 .finalCta h2 {
   margin: 25px 0 35px;
@@ -147,8 +157,8 @@
   gap: 24px;
   min-height: 46px;
   padding: 0 18px;
-  background: #111;
-  color: #fff;
+  background: var(--landing-button-bg);
+  color: var(--landing-button-text);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.06em;
@@ -158,13 +168,13 @@
   background: #393939;
 }
 .finalCta .buttonLight {
-  background: #111;
-  color: #fff;
+  background: var(--landing-button-bg);
+  color: var(--landing-button-text);
 }
 .footer {
   padding: 60px clamp(20px, 6vw, 90px) 25px;
-  background: #111;
-  color: #eee;
+  background: var(--landing-footer-bg);
+  color: var(--landing-text);
 }
 .footerTop {
   display: flex;
@@ -174,7 +184,7 @@
 }
 .footerTop p {
   max-width: 260px;
-  color: #a4a49f;
+  color: var(--landing-muted);
   font-size: 13px;
   line-height: 1.6;
 }
@@ -184,7 +194,7 @@
   gap: 14px 35px;
 }
 .footer nav a {
-  color: #e3e3de;
+  color: var(--landing-text);
   display: inline-flex;
   align-items: center;
   min-height: 44px;
@@ -194,8 +204,8 @@
   justify-content: space-between;
   gap: 20px;
   padding-top: 22px;
-  border-top: 1px solid #50504c;
-  color: #999994;
+  border-top: 1px solid var(--landing-line);
+  color: var(--landing-muted);
   font-size: 10px;
 }
 @media (max-width: 780px) {

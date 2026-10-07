@@ -2,6 +2,21 @@ import { render, screen } from "@testing-library/react";
 import { LandingPage } from "./landing-page";
 
 describe("public landing page", () => {
+  beforeEach(() => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query.includes("reduced-motion"),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+    vi.stubGlobal(
+      "IntersectionObserver",
+      class {
+        observe() {}
+        disconnect() {}
+      },
+    );
+  });
+
   it("shows the product sections and a working app entry point", () => {
     render(<LandingPage />);
 
