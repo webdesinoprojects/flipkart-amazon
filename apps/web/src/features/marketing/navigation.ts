@@ -1,7 +1,7 @@
 export const navigation = [
   ["Home", "#main"],
+  ["Examples", "#comparison"],
   ["How It Works", "#workflow"],
-  ["Marketplaces", "#marketplaces"],
   ["Features", "#features"],
   ["Pricing", "#pricing"],
   ["Privacy", "#privacy"],

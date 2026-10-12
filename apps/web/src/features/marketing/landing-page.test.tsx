@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { LandingPage } from "./landing-page";
 
 describe("public landing page", () => {
@@ -21,9 +21,10 @@ describe("public landing page", () => {
     render(<LandingPage />);
 
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
-      "ONE BATCH.EVERY MARKETPLACE.PRINT READY.",
+      "Shipping labels in.Print-ready PDFs out.",
     );
     for (const name of [
+      /See exactly what stays/,
       /FROM MIXED PDFS/,
       /ONE WORKFLOW/,
       /THE DETAILS/,
@@ -33,13 +34,18 @@ describe("public landing page", () => {
       expect(screen.getByRole("heading", { name })).toBeInTheDocument();
     }
     expect(
-      screen.getAllByRole("link", { name: /START PROCESSING/ }),
-    ).toHaveLength(2);
+      screen.getByRole("link", { name: /START PROCESSING/ }),
+    ).toHaveAttribute("href", "/register");
     expect(
-      screen
-        .getAllByRole("link", { name: /START PROCESSING/ })
-        .every((link) => link.getAttribute("href") === "/register"),
-    ).toBe(true);
+      screen.getByRole("link", { name: /Process your labels/ }),
+    ).toHaveAttribute("href", "/register");
+
+    fireEvent.click(screen.getByRole("tab", { name: /Amazon/ }));
+    expect(
+      screen.getByRole("img", {
+        name: /Amazon original PDF beside its extracted print-ready shipping label/,
+      }),
+    ).toBeInTheDocument();
     for (const link of document.querySelectorAll<HTMLAnchorElement>(
       'a[href^="#"]',
     )) {

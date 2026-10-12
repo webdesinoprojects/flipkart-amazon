@@ -119,7 +119,15 @@
   box-shadow: 0 4px 14px #00000029;
   color: #fff;
   cursor: pointer;
-  font-size: 20px;
+}
+.themeButton svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.6;
 }
 .themeButton:hover {
   background: #3a3a3d;

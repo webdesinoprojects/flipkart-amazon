@@ -1,0 +1,467 @@
+.visual {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid #c9cec6;
+  border-radius: clamp(22px, 2.6vw, 34px);
+  background: #e9ebe5;
+  box-shadow:
+    0 26px 80px #27312724,
+    0 3px 12px #27312714;
+  isolation: isolate;
+}
+
+.video,
+.frameWash {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.video {
+  z-index: -2;
+  object-fit: cover;
+}
+
+.frameWash {
+  z-index: -1;
+  background:
+    linear-gradient(90deg, #f5f4eeed 0%, #f5f4eeb5 21%, transparent 44%),
+    linear-gradient(180deg, transparent 65%, #e6e8e0a8 100%);
+  pointer-events: none;
+}
+
+.sequenceLabel {
+  position: absolute;
+  top: clamp(14px, 2vw, 22px);
+  left: clamp(14px, 2vw, 22px);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #1c211d;
+  font-family: var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.sequenceLabel span {
+  color: #687067;
+  font-size: clamp(7px, 0.8vw, 10px);
+}
+
+.sequenceLabel strong {
+  font-size: clamp(10px, 1.1vw, 13px);
+}
+
+.sourceDocument {
+  position: absolute;
+  z-index: 2;
+  top: 7%;
+  left: 38%;
+  width: 31%;
+  opacity: 0;
+  filter: drop-shadow(0 16px 18px #12181236);
+  transform: translate3d(18%, -8%, 0) scale(0.58);
+  transform-origin: center;
+}
+
+.documentTag {
+  position: absolute;
+  z-index: 3;
+  top: 8px;
+  left: 8px;
+  padding: 5px 7px;
+  border-radius: 4px;
+  background: #151815e8;
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: clamp(6px, 0.68vw, 9px);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.documentSurface {
+  position: relative;
+  overflow: hidden;
+  border-radius: 3px;
+  background: #fff;
+}
+
+.documentSurface img,
+.outputLabel > img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.cropFrame {
+  position: absolute;
+  top: 1.5%;
+  right: 20.2%;
+  bottom: 39%;
+  left: 24.5%;
+  border: 2px solid #16c976;
+  box-shadow:
+    0 0 0 999px #0d17111f,
+    0 0 18px #16c97675;
+  opacity: 0;
+}
+
+.cropFrame::before,
+.cropFrame::after {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-color: #0d9e5b;
+  content: "";
+}
+
+.cropFrame::before {
+  top: -4px;
+  left: -4px;
+  border-top: 3px solid;
+  border-left: 3px solid;
+}
+
+.cropFrame::after {
+  right: -4px;
+  bottom: -4px;
+  border-right: 3px solid;
+  border-bottom: 3px solid;
+}
+
+.scanLine {
+  position: absolute;
+  z-index: 2;
+  top: 4%;
+  right: 18%;
+  left: 22%;
+  height: 2px;
+  background: #21df88;
+  box-shadow: 0 0 14px 4px #21df8880;
+  opacity: 0;
+}
+
+.outputLabel {
+  position: absolute;
+  z-index: 4;
+  top: 7%;
+  right: 4%;
+  width: 35%;
+  overflow: hidden;
+  border: 1px solid #aeb4ab;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 24px 42px #111a1230;
+  opacity: 0;
+  transform: translate3d(-18%, 24%, 0) scale(0.42) rotate(-5deg);
+  transform-origin: 50% 80%;
+}
+
+.outputTopline,
+.outputActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  font-family: var(--font-mono);
+  font-size: clamp(6px, 0.72vw, 9px);
+  text-transform: uppercase;
+}
+
+.outputTopline {
+  border-bottom: 1px solid #d8dbd5;
+  color: #5f675f;
+}
+
+.outputTopline strong {
+  color: #111612;
+}
+
+.outputActions {
+  border-top: 1px solid #d8dbd5;
+  background: #f1f4ef;
+  color: #147849;
+  font-weight: 700;
+}
+
+.outputActions span:last-child {
+  padding: 5px 7px;
+  border-radius: 999px;
+  background: #131713;
+  color: #fff;
+}
+
+.progress {
+  position: absolute;
+  right: clamp(14px, 2vw, 22px);
+  bottom: clamp(13px, 1.8vw, 20px);
+  left: clamp(14px, 2vw, 22px);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+}
+
+.progress span {
+  position: relative;
+  padding-top: 8px;
+  color: #717870;
+  font-family: var(--font-mono);
+  font-size: clamp(6px, 0.7vw, 9px);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.progress span::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  background: #b8bdb5;
+  content: "";
+}
+
+.replay {
+  position: absolute;
+  z-index: 6;
+  bottom: clamp(36px, 4.5vw, 54px);
+  left: clamp(14px, 2vw, 22px);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 11px;
+  border: 1px solid #aab0a8;
+  border-radius: 999px;
+  background: #f7f7f1de;
+  color: #202520;
+  font-family: var(--font-mono);
+  font-size: clamp(7px, 0.75vw, 10px);
+  font-weight: 700;
+  opacity: 0;
+  cursor: pointer;
+  transition:
+    opacity 0.25s,
+    transform 0.25s;
+}
+
+.replay:hover {
+  transform: translateY(-2px);
+}
+
+.replay svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}
+
+.visual[data-state="running"] .sourceDocument {
+  animation: sourceCycle 8s linear both;
+}
+
+.visual[data-state="running"] .cropFrame {
+  animation: cropCycle 8s linear both;
+}
+
+.visual[data-state="running"] .scanLine {
+  animation: scanCycle 8s cubic-bezier(0.45, 0, 0.55, 1) both;
+}
+
+.visual[data-state="running"] .outputLabel {
+  animation: outputCycle 8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.visual[data-state="running"] .progress span::before {
+  animation: progressCycle 8s linear both;
+}
+
+.visual[data-state="running"] .progress span:nth-child(2)::before {
+  animation-delay: 1.6s;
+}
+
+.visual[data-state="running"] .progress span:nth-child(3)::before {
+  animation-delay: 3.2s;
+}
+
+.visual[data-state="running"] .progress span:nth-child(4)::before {
+  animation-delay: 4.8s;
+}
+
+.visual[data-state="done"] .outputLabel {
+  opacity: 1;
+  transform: none;
+}
+
+.visual[data-state="done"] .progress span::before {
+  background: #18bd70;
+}
+
+.visual[data-state="done"] .replay {
+  opacity: 1;
+}
+
+@keyframes sourceCycle {
+  0%,
+  14% {
+    opacity: 0;
+    transform: translate3d(18%, -8%, 0) scale(0.58);
+  }
+  23% {
+    opacity: 1;
+    transform: translate3d(7%, -2%, 0) scale(0.78);
+  }
+  31%,
+  58% {
+    opacity: 1;
+    transform: translate3d(-8%, 1%, 0) scale(1);
+  }
+  66% {
+    opacity: 0;
+    transform: translate3d(27%, 26%, 0) scale(0.34);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes cropCycle {
+  0%,
+  28% {
+    opacity: 0;
+    inset: 1.5% 20.2% 39% 24.5%;
+  }
+  34%,
+  55% {
+    opacity: 1;
+    inset: 1.5% 20.2% 39% 24.5%;
+  }
+  63%,
+  100% {
+    opacity: 0;
+    inset: 5% 25% 43% 29%;
+  }
+}
+
+@keyframes scanCycle {
+  0%,
+  31% {
+    top: 4%;
+    opacity: 0;
+  }
+  34% {
+    top: 4%;
+    opacity: 1;
+  }
+  51% {
+    top: 58%;
+    opacity: 1;
+  }
+  54%,
+  100% {
+    top: 58%;
+    opacity: 0;
+  }
+}
+
+@keyframes outputCycle {
+  0%,
+  64% {
+    opacity: 0;
+    transform: translate3d(-18%, 24%, 0) scale(0.42) rotate(-5deg);
+  }
+  75% {
+    opacity: 1;
+  }
+  84%,
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes progressCycle {
+  0%,
+  8% {
+    background: #b8bdb5;
+  }
+  20%,
+  100% {
+    background: #18bd70;
+  }
+}
+
+@media (max-width: 820px) {
+  .sourceDocument {
+    left: 34%;
+    width: 34%;
+  }
+
+  .outputLabel {
+    width: 38%;
+  }
+}
+
+@media (max-width: 520px) {
+  .visual {
+    border-radius: 20px;
+  }
+
+  .sequenceLabel,
+  .progress {
+    display: none;
+  }
+
+  .sourceDocument {
+    top: 4%;
+    left: 34%;
+    width: 35%;
+  }
+
+  .outputLabel {
+    top: 4%;
+    right: 4%;
+    width: 40%;
+  }
+
+  .outputTopline,
+  .outputActions {
+    padding: 5px 6px;
+  }
+
+  .replay {
+    bottom: 9px;
+    left: 9px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .video {
+    display: none;
+  }
+
+  .visual {
+    background:
+      linear-gradient(90deg, #f5f4eeed 0%, #f5f4ee8c 35%, transparent 60%),
+      url("/images/marketing/label-machine-poster.webp") center / cover;
+  }
+
+  .visual[data-state] .sourceDocument,
+  .visual[data-state] .cropFrame,
+  .visual[data-state] .scanLine {
+    display: none;
+    animation: none;
+  }
+
+  .visual[data-state] .outputLabel {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+}

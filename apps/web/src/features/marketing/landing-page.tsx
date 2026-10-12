@@ -1,33 +1,23 @@
 import Link from "next/link";
-import { BackgroundVideo } from "./background-video";
-import { IllustrativeStats } from "./illustrative-stats";
+import { HybridHeroVisual } from "./hybrid-hero-visual";
 import { MobileNavigation, ThemeToggle } from "./landing-controls";
 import { Logo } from "./logo";
+import { MarketplaceComparison } from "./marketplace-comparison";
 import { navigation } from "./navigation";
 import { ProductSections } from "./product-sections";
 import { PricingFooter } from "./pricing-footer";
 import styles from "./marketing.module.css";
 import navStyles from "./navigation.module.css";
 
+const proofPoints = [
+  ["3 marketplaces", "Flipkart, Amazon and Meesho"],
+  ["2 print layouts", "100 × 150 mm or A4 four-up"],
+  ["1 clean PDF", "Preview, download and print"],
+] as const;
+
 export function LandingPage() {
   return (
-    <div id="marketing-page" className={styles.page} data-theme="dark">
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link
-        rel="preconnect"
-        href="https://fonts.gstatic.com"
-        crossOrigin="anonymous"
-      />
-      {/* Fonts are scoped to the public page so the PDF workspace stays self-contained. */}
-      {/* eslint-disable-next-line @next/next/no-page-custom-font */}
-      <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
-        rel="stylesheet"
-      />
-      <link
-        href="https://db.onlinewebfonts.com/c/8cb707a9b8a73f8a7403336b861c3074?family=BubbledotICG-FinePos"
-        rel="stylesheet"
-      />
+    <div id="marketing-page" className={styles.page} data-theme="light">
       <a className={styles.skipLink} href="#main">
         Skip to content
       </a>
@@ -50,54 +40,47 @@ export function LandingPage() {
       </header>
       <main id="main">
         <section className={styles.hero} aria-labelledby="hero-title">
-          <div className={styles.videoBackground} aria-hidden="true">
-            <BackgroundVideo />
-          </div>
-          <div className={styles.videoTint} aria-hidden="true" />
-          <div className={styles.heroCenter}>
-            <div
-              className={styles.trustRow}
-              aria-label="Supported marketplace PDF workflow"
-            >
-              <span className={styles.trustIcon} aria-hidden="true">
-                <span className={styles.trustIconInner}>F</span>
-              </span>
-              <span className={styles.trustIcon} aria-hidden="true">
-                <span className={styles.trustIconInner}>a</span>
-              </span>
-              <span className={styles.trustIcon} aria-hidden="true">
-                <span className={styles.trustIconInner}>M</span>
-              </span>
-              <span className={styles.trustPill}>
-                Flipkart · Amazon · Meesho
-              </span>
+          <div className={styles.heroGrid}>
+            <div className={styles.heroCopy}>
+              <p className={styles.eyebrow}>
+                <span aria-hidden="true" />
+                Built for marketplace sellers
+              </p>
+              <h1 id="hero-title" className={styles.headline}>
+                Shipping labels in.
+                <span>Print-ready PDFs out.</span>
+              </h1>
+              <p className={styles.heroDescription}>
+                Remove invoices, crop every shipping label correctly and prepare
+                a complete Flipkart, Amazon or Meesho batch for printing.
+              </p>
+              <div className={styles.heroActions}>
+                <Link className={styles.primaryCta} href="/register">
+                  Process your labels <span aria-hidden="true">↗</span>
+                </Link>
+                <a className={styles.secondaryCta} href="#comparison">
+                  See before and after <span aria-hidden="true">↓</span>
+                </a>
+              </div>
+              <p className={styles.heroAssurance}>
+                No card required <span aria-hidden="true">·</span> Review before
+                printing <span aria-hidden="true">·</span> Original PDFs stay in
+                your browser
+              </p>
             </div>
-            <h1 id="hero-title" className={styles.headline}>
-              <span>ONE BATCH.</span>
-              <span>EVERY MARKETPLACE.</span>
-              <span>PRINT READY.</span>
-            </h1>
-            <p className={styles.heroDescription}>
-              Turn mixed Flipkart, Amazon and Meesho shipping PDFs into
-              barcode-checked, print-ready 100 × 150 mm labels directly in the
-              browser.
-            </p>
-            <div className={styles.heroActions}>
-              <Link className={styles.primaryCta} href="/register">
-                START PROCESSING ↗
-              </Link>
-              <a className={styles.secondaryCta} href="#workflow">
-                SEE HOW IT WORKS ↓
-              </a>
-            </div>
+            <HybridHeroVisual />
           </div>
-          <div>
-            <IllustrativeStats />
-            <p className={styles.sampleNote}>
-              ILLUSTRATIVE BATCH · 1 REVIEW · 1 FAILED · NO CUSTOMER DOCUMENTS
-            </p>
+          <div className={styles.proofStrip} aria-label="Product capabilities">
+            {proofPoints.map(([value, label], index) => (
+              <div className={styles.proofItem} key={value}>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <strong>{value}</strong>
+                <small>{label}</small>
+              </div>
+            ))}
           </div>
         </section>
+        <MarketplaceComparison />
         <ProductSections />
         <PricingFooter />
       </main>

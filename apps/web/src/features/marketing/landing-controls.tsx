@@ -7,7 +7,7 @@ import { navigation } from "./navigation";
 import styles from "./navigation.module.css";
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [theme, setTheme] = useState<"dark" | "light">("light");
 
   function toggleTheme() {
     const next = theme === "dark" ? "light" : "dark";
@@ -22,7 +22,16 @@ export function ThemeToggle() {
       aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
       onClick={toggleTheme}
     >
-      <span aria-hidden="true">{theme === "dark" ? "☼" : "◐"}</span>
+      {theme === "dark" ? (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="3.5" />
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+        </svg>
+      ) : (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M20.2 15.3A8.5 8.5 0 0 1 8.7 3.8 8.5 8.5 0 1 0 20.2 15.3Z" />
+        </svg>
+      )}
     </button>
   );
 }
