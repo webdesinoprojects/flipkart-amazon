@@ -40,7 +40,7 @@ export function LandingPage() {
             </a>
           ))}
         </nav>
-        <Link className={navStyles.headerCta} href="/app">
+        <Link className={navStyles.headerCta} href="/register">
           START PROCESSING ↗
         </Link>
         <div className={navStyles.headerControls}>
@@ -83,7 +83,7 @@ export function LandingPage() {
               browser.
             </p>
             <div className={styles.heroActions}>
-              <Link className={styles.primaryCta} href="/app">
+              <Link className={styles.primaryCta} href="/register">
                 START PROCESSING ↗
               </Link>
               <a className={styles.secondaryCta} href="#workflow">

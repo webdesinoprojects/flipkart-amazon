@@ -1,0 +1,28 @@
+{
+	auto_https off
+	admin off
+	servers {
+		trusted_proxies static private_ranges
+		client_ip_headers X-Forwarded-For X-Real-IP
+		trusted_proxies_strict
+	}
+}
+
+:8080 {
+	encode zstd gzip
+
+	@api path /api/* /health/* /docs /docs/* /openapi.json
+	handle @api {
+		reverse_proxy api:8000
+	}
+	handle {
+		reverse_proxy web:3000
+	}
+
+	header {
+		-Server
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+	}
+}

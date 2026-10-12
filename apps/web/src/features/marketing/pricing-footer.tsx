@@ -39,8 +39,8 @@ export function PricingFooter() {
             EACH PACE.
           </h2>
           <p>
-            Coming with accounts. Billing and plan limits are not active in the
-            current local app.
+            Accounts and private output history are active. Billing and plan
+            limits are not enabled yet.
           </p>
         </div>
         <div className={styles.pricingGrid}>
@@ -64,7 +64,7 @@ export function PricingFooter() {
                 <span>DAILY CAPACITY</span>
                 <strong>{plan.limit}</strong>
               </div>
-              <Link className={styles.planButton} href="/app">
+              <Link className={styles.planButton} href="/register">
                 TRY THE LOCAL APP <span aria-hidden="true">↗</span>
               </Link>
             </article>
@@ -100,7 +100,7 @@ export function PricingFooter() {
           <br />
           BATCH PRINT READY.
         </h2>
-        <Link className={styles.buttonLight} href="/app">
+        <Link className={styles.buttonLight} href="/login">
           OPEN THE LOCAL APP <span aria-hidden="true">↗</span>
         </Link>
       </section>
@@ -116,7 +116,7 @@ export function PricingFooter() {
             <a href="#features">Features</a>
             <a href="#pricing">Pricing</a>
             <a href="#privacy">Privacy</a>
-            <Link href="/app">Open App</Link>
+            <Link href="/login">Open App</Link>
           </nav>
         </div>
         <div className={styles.footerBottom}>

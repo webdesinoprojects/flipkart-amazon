@@ -1,22 +1,57 @@
 "use client";
 
-import type {
-  Batch,
-  BatchDocument,
-  BatchLabel,
-  PdfRect,
+import {
+  describeOutputLayout,
+  describeOutputVolume,
+  type Batch,
+  type BatchDocument,
+  type BatchLabel,
+  type PdfRect,
 } from "@label-normalizer/core";
 import { StatusBadge } from "@label-normalizer/ui";
+import { Check, LoaderCircle, RefreshCcw } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
+import { useBatchStore } from "@/features/batch/batch-store";
+import {
+  retryOutputLayout,
+  selectOutputLayout,
+} from "@/features/batch/output-layout-controller";
+import { useAutomaticHistory } from "@/features/dashboard/use-automatic-history";
+import { OutputLayoutChoice } from "./output-layout-choice";
 
 export function OutputPanel({ batch }: { readonly batch: Batch }) {
   const [view, setView] = useState<"thumbnails" | "list">("thumbnails");
   const [showPreview, setShowPreview] = useState(false);
   const [printMessage, setPrintMessage] = useState<string | null>(null);
-  const artifact = batch.combinedPdf;
+  const outputLayout = useBatchStore((state) => state.outputLayout);
+  const outputStatus = useBatchStore((state) => state.outputStatus);
+  const outputError = useBatchStore((state) => state.outputError);
+  const {
+    state: saveState,
+    message: saveMessage,
+    retry: retrySave,
+  } = useAutomaticHistory(batch);
+
   const labels = [...batch.labels].sort(
     (left, right) => left.outputOrder - right.outputOrder,
   );
+  // One object drives preview, download, print, and history — and only when it
+  // actually matches the selected layout. While a variant is generating or
+  // after it failed there is nothing truthful to act on, so the actions are
+  // unavailable rather than silently serving the other format.
+  const artifact =
+    batch.combinedPdf?.layout === outputLayout ? batch.combinedPdf : null;
+  const generating = outputStatus === "generating";
+  const descriptor = describeOutputLayout(outputLayout);
+  const actionsDisabled = generating || !artifact?.objectUrl;
+
+  function changeLayout(next: typeof outputLayout): void {
+    setPrintMessage(null);
+    setShowPreview(false);
+    void selectOutputLayout(next);
+  }
+
   if (labels.length === 0 && batch.status !== "ready") return null;
 
   return (
@@ -24,30 +59,63 @@ export function OutputPanel({ batch }: { readonly batch: Batch }) {
       <div className="panel-heading output-heading">
         <div>
           <span className="eyebrow">FINAL BATCH</span>
-          <h2 id="output-title">PRINT_READY_LABELS.pdf</h2>
+          <h2 id="output-title">{descriptor.filename}</h2>
         </div>
         <div className="output-actions">
+          <span
+            className="save-history-action"
+            data-status={saveState}
+            role="status"
+          >
+            {saveState === "saving" ? (
+              <LoaderCircle aria-hidden="true" className="spin" size={13} />
+            ) : saveState === "saved" ? (
+              <Check aria-hidden="true" size={13} />
+            ) : (
+              <LoaderCircle aria-hidden="true" size={13} />
+            )}
+            {saveState === "saving"
+              ? "SAVING TO HISTORY"
+              : saveState === "saved"
+                ? "SAVED TO HISTORY"
+                : saveState === "failed"
+                  ? "HISTORY SAVE FAILED"
+                  : "WAITING TO SAVE"}
+          </span>
+          {saveState === "failed" ? (
+            <button
+              className="retry-history-action"
+              disabled={actionsDisabled}
+              onClick={retrySave}
+              type="button"
+            >
+              <RefreshCcw aria-hidden="true" size={13} /> RETRY SAVE
+            </button>
+          ) : null}
           <button
-            disabled={!artifact?.objectUrl}
+            disabled={actionsDisabled}
             onClick={() => setShowPreview((current) => !current)}
             type="button"
           >
             PREVIEW
           </button>
           <button
-            disabled={!artifact?.objectUrl}
+            disabled={actionsDisabled}
             onClick={() => artifact && downloadCombinedPdf(artifact)}
             type="button"
           >
             DOWNLOAD PDF
           </button>
           <button
-            disabled={!artifact?.objectUrl}
+            disabled={actionsDisabled}
             onClick={() => {
               const opened = artifact ? printCombinedPdf(artifact) : false;
               setPrintMessage(
                 opened
-                  ? "Print window opened for the combined 100 × 150 mm PDF."
+                  ? `Print window opened for ${describeOutputVolume(
+                      artifact?.labelCount ?? batch.counts.labelsReady,
+                      outputLayout,
+                    ).toLowerCase()} (${descriptor.shortLabel}).`
                   : "The browser blocked the print window. Allow popups and try again.",
               );
             }}
@@ -57,6 +125,15 @@ export function OutputPanel({ batch }: { readonly batch: Batch }) {
           </button>
         </div>
       </div>
+
+      <OutputLayoutChoice
+        errorMessage={outputError}
+        labelCount={artifact?.labelCount ?? batch.counts.labelsReady}
+        onChange={changeLayout}
+        onRetry={() => void retryOutputLayout()}
+        status={outputStatus}
+        value={outputLayout}
+      />
 
       <div className="output-toolbar">
         <p>
@@ -85,11 +162,22 @@ export function OutputPanel({ batch }: { readonly batch: Batch }) {
           {printMessage}
         </p>
       )}
+      {saveMessage && (
+        <p className="output-message" data-status={saveState} role="status">
+          {saveMessage}
+          {saveState === "saved" && (
+            <Link href="/dashboard/history"> VIEW HISTORY</Link>
+          )}
+        </p>
+      )}
       {showPreview && artifact?.objectUrl && (
         <div className="combined-preview">
           <iframe
             src={artifact.objectUrl}
-            title={`Combined PDF preview, ${artifact.pageCount} pages`}
+            title={`Combined PDF preview: ${describeOutputVolume(
+              artifact.labelCount,
+              artifact.layout,
+            ).toLowerCase()}`}
           />
         </div>
       )}

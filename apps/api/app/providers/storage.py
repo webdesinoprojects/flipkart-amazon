@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Protocol
+from typing import Literal, Protocol
 from uuid import uuid4
 
 import httpx
@@ -25,7 +25,13 @@ class StoredObject:
 class StorageProvider(Protocol):
     id: str
 
-    def put(self, data: bytes, safe_name: str) -> StoredObject: ...
+    def put(
+        self,
+        data: bytes,
+        safe_name: str,
+        *,
+        category: Literal["temporary", "saved-output"] = "temporary",
+    ) -> StoredObject: ...
 
     def get(self, key: str) -> bytes: ...
 
@@ -45,7 +51,13 @@ class LocalTempStorage:
             raise StorageUnavailable("Invalid storage key")
         return candidate
 
-    def put(self, data: bytes, safe_name: str) -> StoredObject:
+    def put(
+        self,
+        data: bytes,
+        safe_name: str,
+        *,
+        category: Literal["temporary", "saved-output"] = "temporary",
+    ) -> StoredObject:
         suffix = ".pdf" if safe_name.lower().endswith(".pdf") else ".bin"
         key = f"objects/{uuid4().hex}{suffix}"
         target = self._path(key)
@@ -73,17 +85,29 @@ class ImageKitStorage:
         self.private_key = settings.imagekit_private_key
         self.local_mirror = local_mirror
 
-    def put(self, data: bytes, safe_name: str) -> StoredObject:
-        mirror = self.local_mirror.put(data, safe_name)
+    def put(
+        self,
+        data: bytes,
+        safe_name: str,
+        *,
+        category: Literal["temporary", "saved-output"] = "temporary",
+    ) -> StoredObject:
+        mirror = self.local_mirror.put(data, safe_name, category=category)
+        folder = (
+            "/label-normalizer-saved-outputs"
+            if category == "saved-output"
+            else "/label-normalizer-temporary"
+        )
+        tags = f"{category},label-normalizer"
         response = httpx.post(
             "https://upload.imagekit.io/api/v1/files/upload",
             auth=(self.private_key, ""),
             data={
                 "fileName": safe_name,
-                "folder": "/label-normalizer-temporary",
+                "folder": folder,
                 "isPrivateFile": "true",
                 "useUniqueFileName": "true",
-                "tags": "temporary,label-normalizer",
+                "tags": tags,
             },
             files={"file": (safe_name, data, "application/pdf")},
             timeout=30.0,

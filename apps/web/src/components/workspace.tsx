@@ -1,5 +1,6 @@
 "use client";
 
+import { describeOutputVolume } from "@label-normalizer/core";
 import { StatusBadge } from "@label-normalizer/ui";
 import { useState } from "react";
 import { DocumentList } from "./document-list";
@@ -14,7 +15,11 @@ import {
   processBatchFiles,
 } from "@/features/batch/pdf-engine";
 
-export function Workspace() {
+export function Workspace({
+  embedded = false,
+}: {
+  readonly embedded?: boolean;
+}) {
   const batch = useBatchStore((state) => state.batch);
   const selectedDocumentId = useBatchStore((state) => state.selectedDocumentId);
   const selectedPageId = useBatchStore((state) => state.selectedPageId);
@@ -51,16 +56,18 @@ export function Workspace() {
   }
 
   return (
-    <main className="app-shell">
-      <header className="site-header">
-        <a className="brand" href="#top" id="top">
-          LABEL NORMALIZER
-        </a>
-        <div className="header-meta">
-          <span>LOCAL-FIRST</span>
-          <span>PHASE 10</span>
-        </div>
-      </header>
+    <main className={`app-shell${embedded ? " app-shell--embedded" : ""}`}>
+      {!embedded && (
+        <header className="site-header">
+          <a className="brand" href="#top" id="top">
+            LABEL NORMALIZER
+          </a>
+          <div className="header-meta">
+            <span>LOCAL-FIRST</span>
+            <span>PHASE 10</span>
+          </div>
+        </header>
+      )}
 
       {!batch ? (
         <section className="landing">
@@ -151,8 +158,11 @@ export function Workspace() {
               </p>
               {batch.combinedPdf && (
                 <p className="phase-note" data-testid="combined-artifact">
-                  {batch.combinedPdf.filename} / {batch.combinedPdf.pageCount}
-                  &nbsp;PAGES / 100 × 150&nbsp;MM
+                  {batch.combinedPdf.filename} /{" "}
+                  {describeOutputVolume(
+                    batch.combinedPdf.labelCount,
+                    batch.combinedPdf.layout,
+                  )}
                 </p>
               )}
             </aside>

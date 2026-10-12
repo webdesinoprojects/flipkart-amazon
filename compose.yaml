@@ -5,9 +5,9 @@ services:
     image: caddy:2.10-alpine
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "127.0.0.1:${PUBLIC_HTTP_PORT:-8080}:8080"
     volumes:
-      - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${CADDYFILE_PATH:-./infra/Caddyfile}:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
@@ -26,6 +26,8 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://marketplace-label-normalizer.onrender.com}
     restart: unless-stopped
     environment:
       HOSTNAME: 0.0.0.0
@@ -47,7 +49,7 @@ services:
     read_only: true
     tmpfs:
       - /tmp
-      - /app/apps/web/.next/cache
+      - /app/apps/web/.next/cache:uid=1001,gid=1001,mode=0755
     security_opt:
       - no-new-privileges:true
 
@@ -79,6 +81,8 @@ services:
       MAX_PDF_PAGES: ${MAX_PDF_PAGES:-200}
       PROCESSING_TIMEOUT_SECONDS: ${PROCESSING_TIMEOUT_SECONDS:-120}
       TEMP_FILE_TTL_SECONDS: ${TEMP_FILE_TTL_SECONDS:-3600}
+      SAVED_OUTPUT_RETENTION_DAYS: ${SAVED_OUTPUT_RETENTION_DAYS:-30}
+      MAX_SAVED_OUTPUT_BYTES: ${MAX_SAVED_OUTPUT_BYTES:-52428800}
       IMAGEKIT_PRIVATE_KEY: ${IMAGEKIT_PRIVATE_KEY:-}
       IMAGEKIT_PUBLIC_KEY: ${IMAGEKIT_PUBLIC_KEY:-}
       IMAGEKIT_URL_ENDPOINT: ${IMAGEKIT_URL_ENDPOINT:-}
@@ -253,7 +257,7 @@ services:
     environment:
       POSTGRES_DB: labels
       POSTGRES_USER: labels
-      POSTGRES_PASSWORD: labels
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-labels}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:

@@ -25,7 +25,7 @@ ${SITE_NAME} is a local-first web application for ecommerce sellers who need to 
 
 ## Privacy
 
-Normal PDF processing happens locally in the browser. Files are not uploaded by the standard workflow. Optional server and AI fallback architecture is separate and should only be used when deterministic processing is uncertain and explicitly enabled.
+Normal PDF processing happens locally in the browser. Original marketplace PDFs are not uploaded by the standard workflow. For signed-in users, only the generated combined output PDF and aggregate non-PII counts are saved automatically to private history. Optional server and AI fallback architecture is separate and should only be used when deterministic processing is uncertain and explicitly enabled.
 `;
 
 export function GET(): Response {

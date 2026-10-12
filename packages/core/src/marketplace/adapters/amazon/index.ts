@@ -41,8 +41,12 @@ export class AmazonAdapter implements MarketplaceAdapter<
     const hasAmazonAnchor = context.document.pages.some((page) =>
       pageContains(page, "amazon.in"),
     );
+    const layoutFingerprint = detectDocumentFingerprint(context.document);
 
-    if (supplierInvoices.length === 0 || !hasAmazonAnchor) {
+    if (
+      supplierInvoices.length === 0 ||
+      (!hasAmazonAnchor && !layoutFingerprint)
+    ) {
       return unknownDetection(this.id, this.version);
     }
 
@@ -53,13 +57,15 @@ export class AmazonAdapter implements MarketplaceAdapter<
         source: "text_anchor",
         weight: 0.45,
       },
-      {
+    ];
+    if (hasAmazonAnchor) {
+      evidence.push({
         code: "amazon.anchor.amazon_in",
         message: "Found the amazon.in document anchor.",
         source: "text_anchor",
         weight: 0.2,
-      },
-    ];
+      });
+    }
     if (rasterLabelCandidates.length > 0) {
       evidence.push({
         code: "amazon.structure.raster_label_page",
@@ -70,7 +76,6 @@ export class AmazonAdapter implements MarketplaceAdapter<
       });
     }
 
-    const layoutFingerprint = detectDocumentFingerprint(context.document);
     if (layoutFingerprint) {
       evidence.push({
         code: "amazon.layout.v1",

@@ -2,9 +2,12 @@
 
 import type {
   BatchLabel,
+  NormalizedLabel,
   PdfPageAnalysis,
   RegionDetection,
 } from "@label-normalizer/core";
+import { TARGET_LABEL_SIZE_PT } from "@label-normalizer/core";
+import { PDFDocument } from "pdf-lib";
 import { useBatchStore } from "./batch-store";
 import { approveAllReviewLabels, retainPageForReview } from "./pdf-engine";
 
@@ -85,7 +88,54 @@ describe("bulk manual review", () => {
       action: "approve_all",
     });
   });
+
+  it("reassembles reviewed labels in the currently selected A4 layout", async () => {
+    const store = useBatchStore.getState();
+    const batchId = store.beginBatch([
+      new File(["%PDF-1.7"], "review.pdf", { type: "application/pdf" }),
+    ]);
+    const label = createLabel("review-a4", "review_required", 0);
+    store.setLabels(batchId, [
+      { ...label, normalized: await createNormalizedLabel(label, batchId) },
+    ]);
+    useBatchStore.setState({ outputLayout: "a4_4up" });
+
+    await approveAllReviewLabels();
+
+    const artifact = useBatchStore.getState().batch?.combinedPdf;
+    expect(artifact?.layout).toBe("a4_4up");
+    expect(artifact?.labelCount).toBe(1);
+    expect(artifact?.pageCount).toBe(1);
+  });
 });
+
+async function createNormalizedLabel(
+  label: BatchLabel,
+  batchId: string,
+): Promise<NormalizedLabel> {
+  const document = await PDFDocument.create();
+  const page = document.addPage([
+    TARGET_LABEL_SIZE_PT.width,
+    TARGET_LABEL_SIZE_PT.height,
+  ]);
+  page.drawRectangle({ x: 10, y: 10, width: 20, height: 20 });
+  return {
+    id: `${label.id}:normalized`,
+    batchId,
+    documentId: label.documentId,
+    pageId: label.pageId,
+    regionId: label.regionId,
+    sourcePageNumber: label.sourcePageNumber,
+    outputOrder: label.outputOrder,
+    marketplace: label.marketplace,
+    widthPt: TARGET_LABEL_SIZE_PT.width,
+    heightPt: TARGET_LABEL_SIZE_PT.height,
+    sourceBoundsPt: label.region.boundsPt,
+    pdfBytes: await document.save(),
+    adapterId: "test",
+    adapterVersion: "1",
+  };
+}
 
 function createLabel(
   id: string,

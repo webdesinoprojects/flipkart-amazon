@@ -39,11 +39,11 @@ The Meesho adapter detects meaningful content bounds, trims unnecessary bottom a
 
 ## User controls
 
-The review flow supports crop movement and resizing, rotation, re-detection, approval, skipping, and downloading an individual label. The final batch provides label counts, thumbnails or list view, preview, combined PDF download, and Print All through the browser/operating-system print dialog.
+The review flow supports crop movement and resizing, rotation, re-detection, approval, skipping, and downloading an individual label. The final batch provides label counts, thumbnails or list view, preview, combined PDF download, and Print All through the browser/operating-system print dialog. For signed-in users, the generated combined PDF is automatically saved to private history, where it can be previewed in an in-app drawer or downloaded.
 
 ## Privacy and security model
 
-Normal processing is local to the browser. Selected shipping PDFs are not uploaded by the primary workflow. PDFs are treated as untrusted input, with document, page, and size limits. Optional server fallback uses private temporary storage and cleanup controls; optional cloud AI providers remain disabled without credentials and are secondary to deterministic validation.
+Normal processing is local to the browser. Selected source shipping PDFs are not uploaded by the primary workflow. Only the generated combined output PDF and aggregate non-PII counts are automatically retained for signed-in history. PDFs are treated as untrusted input, with document, page, and size limits. Optional server fallback uses private temporary storage and cleanup controls; optional cloud AI providers remain disabled without credentials and are secondary to deterministic validation.
 
 ## Important limitations
 

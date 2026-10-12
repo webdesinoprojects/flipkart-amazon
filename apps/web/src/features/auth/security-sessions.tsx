@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { AccountSession } from "./contracts";
 import { authApi, AuthApiError } from "./browser-api";
-import styles from "./dashboard.module.css";
+import styles from "@/features/dashboard/dashboard.module.css";
 
 function readableDate(value: string): string {
   return new Intl.DateTimeFormat(undefined, {

@@ -15,7 +15,7 @@ export class AuthApiError extends Error {
   }
 }
 
-function csrfFromCookie(): string {
+export function csrfFromCookie(): string {
   if (typeof document === "undefined") return "";
   const cookie = document.cookie
     .split(";")
@@ -29,13 +29,15 @@ function csrfFromCookie(): string {
     : "";
 }
 
-async function request<T>(
+export async function browserApiRequest<T>(
   path: string,
   init: RequestInit = {},
   csrf = false,
 ): Promise<T> {
   const headers = new Headers(init.headers);
-  if (init.body) headers.set("Content-Type", "application/json");
+  if (init.body && !(init.body instanceof FormData)) {
+    headers.set("Content-Type", "application/json");
+  }
   if (csrf) {
     let token = csrfFromCookie();
     if (!token) {
@@ -74,33 +76,36 @@ async function request<T>(
 
 export const authApi = {
   register: (email: string, password: string) =>
-    request<AcceptedResponse>("/api/v1/auth/register", {
+    browserApiRequest<AcceptedResponse>("/api/v1/auth/register", {
       method: "POST",
       body: JSON.stringify({ email, password }),
     }),
   login: (email: string, password: string) =>
-    request<{ user: AuthUser; csrfToken: string }>("/api/v1/auth/login", {
-      method: "POST",
-      body: JSON.stringify({ email, password }),
-    }),
+    browserApiRequest<{ user: AuthUser; csrfToken: string }>(
+      "/api/v1/auth/login",
+      {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      },
+    ),
   logout: () =>
-    request<{ status: string }>(
+    browserApiRequest<{ status: string }>(
       "/api/v1/auth/logout",
       { method: "POST" },
       true,
     ),
   forgotPassword: (email: string) =>
-    request<AcceptedResponse>("/api/v1/auth/password/forgot", {
+    browserApiRequest<AcceptedResponse>("/api/v1/auth/password/forgot", {
       method: "POST",
       body: JSON.stringify({ email }),
     }),
   resetPassword: (token: string, password: string) =>
-    request<{ status: string }>("/api/v1/auth/password/reset", {
+    browserApiRequest<{ status: string }>("/api/v1/auth/password/reset", {
       method: "POST",
       body: JSON.stringify({ token, password }),
     }),
   verifyEmail: (token: string) =>
-    request<{ status: string; user: AuthUser }>(
+    browserApiRequest<{ status: string; user: AuthUser }>(
       "/api/v1/auth/verify-email/confirm",
       {
         method: "POST",
@@ -108,15 +113,18 @@ export const authApi = {
       },
     ),
   requestVerification: (email: string) =>
-    request<AcceptedResponse>("/api/v1/auth/verify-email/request", {
+    browserApiRequest<AcceptedResponse>("/api/v1/auth/verify-email/request", {
       method: "POST",
       body: JSON.stringify({ email }),
     }),
   sessions: async () =>
-    (await request<{ sessions: AccountSession[] }>("/api/v1/auth/sessions"))
-      .sessions,
+    (
+      await browserApiRequest<{ sessions: AccountSession[] }>(
+        "/api/v1/auth/sessions",
+      )
+    ).sessions,
   revokeSession: (id: string) =>
-    request<void>(
+    browserApiRequest<void>(
       `/api/v1/auth/sessions/${encodeURIComponent(id)}`,
       { method: "DELETE" },
       true,

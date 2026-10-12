@@ -4,6 +4,7 @@ import {
   hasExactTargetLabelDimensions,
   TARGET_LABEL_SIZE_PT,
 } from "./constants";
+import { describeOutputLayout } from "./output-layout";
 import type {
   CombinedPdfArtifact,
   Marketplace,
@@ -194,9 +195,14 @@ export async function assembleNormalizedLabels(
   }
 
   return {
-    filename: "PRINT_READY_LABELS.pdf",
+    filename: describeOutputLayout("label_100x150").filename,
     pdfBytes: await output.save(),
+    // One label per page, so the physical page count and the label count are
+    // the same number here. They are still reported separately because the A4
+    // layout breaks that equality.
     pageCount: ordered.length,
+    labelCount: ordered.length,
+    layout: "label_100x150",
     widthPt: TARGET_LABEL_SIZE_PT.width,
     heightPt: TARGET_LABEL_SIZE_PT.height,
   };

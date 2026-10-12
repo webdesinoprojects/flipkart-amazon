@@ -123,6 +123,11 @@ def cleanup_expired() -> dict[str, int]:
                     storage.delete(document.storage_key)
                 finally:
                     deleted += 1
+            if batch.saved_output is not None:
+                try:
+                    storage.delete(batch.saved_output.storage_key)
+                finally:
+                    deleted += 1
             session.delete(batch)
         session.commit()
     return {"deleted": deleted}

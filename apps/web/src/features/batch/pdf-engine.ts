@@ -1,5 +1,6 @@
 import { INGEST_LIMITS } from "@label-normalizer/config";
 import {
+  assembleLabelsForLayout,
   assembleNormalizedLabels,
   analyzeMachineReadablePixels,
   hasExactTargetLabelDimensions,
@@ -226,7 +227,9 @@ async function reassembleReadyLabels(batchId: string): Promise<void> {
     ) ?? [];
   state.setCombinedPdf(
     batchId,
-    ready.length > 0 ? await assembleNormalizedLabels(ready) : null,
+    ready.length > 0
+      ? await assembleLabelsForLayout(ready, state.outputLayout)
+      : null,
   );
 }
 

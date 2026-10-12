@@ -78,6 +78,113 @@ summary:focus-visible {
   border-inline: 1px solid var(--border);
 }
 
+.app-shell--embedded {
+  padding: clamp(16px, 3vw, 32px);
+  background: var(--background);
+}
+
+.app-shell--embedded .landing {
+  min-height: auto;
+  gap: 12px;
+}
+
+.app-shell--embedded .landing-copy,
+.app-shell--embedded .dropzone {
+  min-height: 430px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+}
+
+.app-shell--embedded .landing-copy {
+  border-right: 1px solid var(--border);
+}
+
+.app-shell--embedded .landing h1 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(42px, 5.5vw, 76px);
+  font-weight: 500;
+  letter-spacing: -0.07em;
+  text-transform: none;
+}
+
+.app-shell--embedded .landing-copy p {
+  font-family: Arial, sans-serif;
+}
+
+.app-shell--embedded .principle-strip {
+  gap: 1px;
+  margin-top: 0;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.app-shell--embedded .principle-strip span {
+  border: 0;
+  background: var(--surface);
+}
+
+.app-shell--embedded .batch-masthead {
+  min-height: 146px;
+  border: 1px solid var(--border);
+  border-radius: 18px 18px 0 0;
+  background: var(--surface);
+}
+
+.app-shell--embedded .workspace-grid {
+  gap: 1px;
+  border-inline: 1px solid var(--border);
+  background: var(--border);
+}
+
+.app-shell--embedded .panel {
+  border: 0;
+  background: var(--surface);
+}
+
+.app-shell--embedded .batch-summary,
+.app-shell--embedded .documents-panel {
+  border-right: 0;
+}
+
+.app-shell--embedded .document-row,
+.app-shell--embedded .text-button,
+.app-shell--embedded .output-actions button,
+.app-shell--embedded .output-toolbar button,
+.app-shell--embedded .rotation-controls button,
+.app-shell--embedded .review-actions button,
+.app-shell--embedded .review-queue button,
+.app-shell--embedded .page-tab {
+  color: var(--text);
+}
+
+.app-shell--embedded .label-result {
+  background: var(--surface);
+}
+
+.app-shell--embedded .batch-footer {
+  border: 1px solid var(--border);
+  border-radius: 0 0 18px 18px;
+  background: var(--surface);
+}
+
+.app-shell--embedded .dropzone:hover,
+.app-shell--embedded .dropzone.is-active {
+  background: var(--text);
+  color: var(--background);
+}
+
+.app-shell--embedded .dropzone:hover .eyebrow,
+.app-shell--embedded .dropzone:hover p,
+.app-shell--embedded .dropzone:hover small,
+.app-shell--embedded .dropzone.is-active .eyebrow,
+.app-shell--embedded .dropzone.is-active p,
+.app-shell--embedded .dropzone.is-active small {
+  color: var(--background);
+}
+
 .site-header {
   min-height: 72px;
   display: flex;
@@ -668,6 +775,11 @@ summary:focus-visible {
   gap: 8px;
 }
 
+.output-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .output-actions button,
 .output-toolbar button {
   min-height: 40px;
@@ -680,6 +792,30 @@ summary:focus-visible {
   font-size: 10px;
 }
 
+.output-actions .save-history-action {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 14px;
+  border: 1px solid var(--success);
+  border-color: var(--success);
+  color: var(--success);
+  font-size: 10px;
+}
+
+.output-actions .save-history-action[data-status="failed"] {
+  border-color: var(--error);
+  color: var(--error);
+}
+
+.output-actions .retry-history-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-color: var(--error);
+}
+
 .output-actions button:hover:not(:disabled),
 .output-toolbar button[aria-pressed="true"] {
   background: var(--text);
@@ -689,6 +825,114 @@ summary:focus-visible {
 .output-actions button:disabled {
   color: var(--dim);
   cursor: not-allowed;
+}
+
+.output-layout {
+  margin: 20px 0 0;
+  padding: 14px 0 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+
+.output-layout legend {
+  padding: 0;
+  color: var(--muted);
+}
+
+.output-layout-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/* The radio itself is visually hidden but still focusable, so keyboard users
+   keep native arrow-key group behaviour and a visible focus ring. */
+.output-layout-option input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.output-layout-option label {
+  display: grid;
+  min-height: 56px;
+  grid-template-columns: 16px 1fr;
+  align-content: center;
+  gap: 2px 9px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.output-layout-option label svg {
+  grid-row: span 2;
+  align-self: center;
+}
+
+.output-layout-name {
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.output-layout-hint {
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.output-layout-option label:hover {
+  border-color: var(--text);
+}
+
+.output-layout-option input:checked + label {
+  border-color: var(--border-strong);
+  background: var(--surface-raised);
+  color: var(--text);
+}
+
+.output-layout-option input:focus-visible + label {
+  outline: 2px solid var(--text);
+  outline-offset: 3px;
+}
+
+.output-layout-volume {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 10px 0 0;
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.output-layout-volume[data-status="generating"] {
+  color: var(--muted);
+}
+
+.output-layout-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0;
+  color: var(--error);
+  font-size: 10px;
+}
+
+.output-layout-error button {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--error);
+  background: transparent;
+  color: var(--error);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 10px;
 }
 
 .output-toolbar {
@@ -704,6 +948,29 @@ summary:focus-visible {
   color: var(--muted);
   font-size: 10px;
   line-height: 1.5;
+}
+
+.output-message[data-status="saved"] {
+  color: var(--success);
+}
+
+.output-message[data-status="failed"] {
+  color: var(--error);
+}
+
+.output-message a {
+  color: currentColor;
+  font-weight: 800;
+}
+
+.spin {
+  animation: workspace-spin 800ms linear infinite;
+}
+
+@keyframes workspace-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .output-message {

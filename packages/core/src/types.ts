@@ -1,3 +1,5 @@
+import type { OutputLayout } from "./output-layout";
+
 export type Marketplace = "flipkart" | "amazon" | "meesho" | "unknown";
 
 export type PageKind =
@@ -200,9 +202,13 @@ export interface BatchLabel {
 }
 
 export interface CombinedPdfArtifact {
-  readonly filename: "PRINT_READY_LABELS.pdf";
+  readonly filename: string;
   readonly pdfBytes: Uint8Array;
+  /** Physical pages in the PDF: label pages for 100 × 150, sheets for A4. */
   readonly pageCount: number;
+  /** Shipment labels represented. Equals `pageCount` only for 100 × 150. */
+  readonly labelCount: number;
+  readonly layout: OutputLayout;
   readonly widthPt: number;
   readonly heightPt: number;
   readonly objectUrl?: string;

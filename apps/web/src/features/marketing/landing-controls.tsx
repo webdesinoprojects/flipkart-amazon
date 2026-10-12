@@ -72,7 +72,7 @@ export function MobileNavigation() {
               ))}
             </nav>
             <Dialog.Close asChild>
-              <Link className={styles.mobileCta} href="/app">
+              <Link className={styles.mobileCta} href="/register">
                 START PROCESSING ↗
               </Link>
             </Dialog.Close>

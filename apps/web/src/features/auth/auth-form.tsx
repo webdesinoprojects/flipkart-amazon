@@ -29,10 +29,11 @@ export function AuthForm({
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const formElement = event.currentTarget;
     setPending(true);
     setError("");
     setMessage("");
-    const form = new FormData(event.currentTarget);
+    const form = new FormData(formElement);
     const email = String(form.get("email") ?? "");
     const password = String(form.get("password") ?? "");
     try {
@@ -43,11 +44,11 @@ export function AuthForm({
       } else if (mode === "register") {
         const result = await authApi.register(email, password);
         setMessage(result.message);
-        event.currentTarget.reset();
+        formElement.reset();
       } else {
         const result = await authApi.forgotPassword(email);
         setMessage(result.message);
-        event.currentTarget.reset();
+        formElement.reset();
       }
     } catch (caught) {
       setError(

@@ -5,15 +5,20 @@ import {
   createProcessingEvent,
   createSourceDescriptor,
   deriveBatchCounts,
+  DEFAULT_OUTPUT_LAYOUT,
   type Batch,
   type BatchDocument,
   type BatchLabel,
   type BatchStatus,
   type CombinedPdfArtifact,
+  type OutputLayout,
   type ProcessingEventDraft,
   type PdfPageAnalysis,
 } from "@label-normalizer/core";
 import { create } from "zustand";
+
+/** Lifecycle of the artifact for the currently selected output layout. */
+export type OutputArtifactStatus = "idle" | "generating" | "ready" | "failed";
 
 interface BatchStoreState {
   readonly batch: Batch | null;
@@ -43,21 +48,64 @@ interface BatchStoreState {
     batchId: string,
     combinedPdf: CombinedPdfArtifact | null,
   ) => void;
+  /**
+   * Output-layout selection and generated variants.
+   *
+   * Kept beside the batch rather than inside it: the layout is a presentation
+   * choice made after processing, not part of the marketplace domain object.
+   * `batch.combinedPdf` always mirrors the variant for `outputLayout`, so every
+   * existing consumer keeps reading one selected artifact.
+   */
+  readonly outputLayout: OutputLayout;
+  readonly outputVariants: ReadonlyMap<OutputLayout, CombinedPdfArtifact>;
+  readonly outputStatus: OutputArtifactStatus;
+  readonly outputError: string | null;
+  readonly beginOutputLayout: (layout: OutputLayout) => void;
+  readonly setOutputVariant: (
+    batchId: string,
+    layout: OutputLayout,
+    artifact: CombinedPdfArtifact,
+  ) => void;
+  readonly failOutputLayout: (layout: OutputLayout, message: string) => void;
   readonly selectDocument: (documentId: string) => void;
   readonly selectPage: (documentId: string, pageId: string) => void;
   readonly reset: () => void;
 }
 
-function disposePreviews(batch: Batch | null): void {
+function revokeObjectUrl(objectUrl: string | undefined): void {
+  if (typeof URL === "undefined" || !objectUrl) return;
+  URL.revokeObjectURL(objectUrl);
+}
+
+function disposePreviews(
+  batch: Batch | null,
+  variants?: ReadonlyMap<OutputLayout, CombinedPdfArtifact>,
+): void {
   if (typeof URL === "undefined") return;
   for (const document of batch?.documents ?? []) {
     for (const page of document.pages) {
-      if (page.preview) URL.revokeObjectURL(page.preview.objectUrl);
+      if (page.preview) revokeObjectUrl(page.preview.objectUrl);
     }
   }
-  if (batch?.combinedPdf?.objectUrl) {
-    URL.revokeObjectURL(batch.combinedPdf.objectUrl);
+  // `batch.combinedPdf` is a mirror of one variant, so only the variant cache
+  // owns the blob URLs; revoking both would double-revoke the selected one.
+  if (variants) {
+    for (const artifact of variants.values())
+      revokeObjectUrl(artifact.objectUrl);
+  } else {
+    revokeObjectUrl(batch?.combinedPdf?.objectUrl);
   }
+}
+
+function withObjectUrl(artifact: CombinedPdfArtifact): CombinedPdfArtifact {
+  return {
+    ...artifact,
+    objectUrl: URL.createObjectURL(
+      new Blob([artifact.pdfBytes.slice().buffer as ArrayBuffer], {
+        type: "application/pdf",
+      }),
+    ),
+  };
 }
 
 export const useBatchStore = create<BatchStoreState>((set, get) => ({
@@ -68,7 +116,7 @@ export const useBatchStore = create<BatchStoreState>((set, get) => ({
   selectedPageId: null,
 
   beginBatch(files) {
-    disposePreviews(get().batch);
+    disposePreviews(get().batch, get().outputVariants);
     const batchId = createBatchId();
     const documents = files.map<BatchDocument>((file, uploadIndex) => {
       const source = createSourceDescriptor(file, batchId, uploadIndex);
@@ -91,6 +139,10 @@ export const useBatchStore = create<BatchStoreState>((set, get) => ({
       pageAnalyses: new Map(),
       selectedDocumentId: documents[0]?.id ?? null,
       selectedPageId: null,
+      outputLayout: DEFAULT_OUTPUT_LAYOUT,
+      outputVariants: new Map(),
+      outputStatus: "idle",
+      outputError: null,
     });
     return batchId;
   },
@@ -183,27 +235,83 @@ export const useBatchStore = create<BatchStoreState>((set, get) => ({
   setCombinedPdf(batchId, combinedPdf) {
     set((state) => {
       if (!state.batch || state.batch.id !== batchId) return state;
-      if (state.batch.combinedPdf?.objectUrl) {
-        URL.revokeObjectURL(state.batch.combinedPdf.objectUrl);
+      // Reassembly from the processing pipeline invalidates every cached
+      // variant, because the underlying approved labels just changed.
+      for (const artifact of state.outputVariants.values()) {
+        revokeObjectUrl(artifact.objectUrl);
       }
-      const artifact = combinedPdf
-        ? {
-            ...combinedPdf,
-            objectUrl: URL.createObjectURL(
-              new Blob([combinedPdf.pdfBytes.slice().buffer as ArrayBuffer], {
-                type: "application/pdf",
-              }),
-            ),
-          }
-        : null;
+      const artifact = combinedPdf ? withObjectUrl(combinedPdf) : null;
+      const variants = new Map<OutputLayout, CombinedPdfArtifact>();
+      if (artifact) variants.set(artifact.layout, artifact);
       return {
         batch: {
           ...state.batch,
           combinedPdf: artifact,
           updatedAt: new Date().toISOString(),
         },
+        outputVariants: variants,
+        outputLayout: artifact?.layout ?? state.outputLayout,
+        outputStatus: artifact ? "ready" : "idle",
+        outputError: null,
       };
     });
+  },
+
+  outputLayout: DEFAULT_OUTPUT_LAYOUT,
+  outputVariants: new Map(),
+  outputStatus: "idle",
+  outputError: null,
+
+  beginOutputLayout(layout) {
+    set((state) => {
+      const cached = state.outputVariants.get(layout);
+      if (cached) {
+        return {
+          outputLayout: layout,
+          outputStatus: "ready",
+          outputError: null,
+          batch: state.batch
+            ? { ...state.batch, combinedPdf: cached }
+            : state.batch,
+        };
+      }
+      return {
+        outputLayout: layout,
+        outputStatus: "generating",
+        outputError: null,
+      };
+    });
+  },
+
+  setOutputVariant(batchId, layout, artifact) {
+    set((state) => {
+      if (!state.batch || state.batch.id !== batchId) return state;
+      const variants = new Map(state.outputVariants);
+      revokeObjectUrl(variants.get(layout)?.objectUrl);
+      const stored = withObjectUrl(artifact);
+      variants.set(layout, stored);
+      // Only promote to the visible artifact when this is still the selection:
+      // a slow generation must never overwrite a newer user choice.
+      const isSelected = state.outputLayout === layout;
+      return {
+        outputVariants: variants,
+        ...(isSelected
+          ? {
+              outputStatus: "ready" as OutputArtifactStatus,
+              outputError: null,
+              batch: { ...state.batch, combinedPdf: stored },
+            }
+          : {}),
+      };
+    });
+  },
+
+  failOutputLayout(layout, message) {
+    set((state) =>
+      state.outputLayout === layout
+        ? { outputStatus: "failed", outputError: message }
+        : state,
+    );
   },
 
   selectDocument(documentId) {
@@ -221,13 +329,17 @@ export const useBatchStore = create<BatchStoreState>((set, get) => ({
   },
 
   reset() {
-    disposePreviews(get().batch);
+    disposePreviews(get().batch, get().outputVariants);
     set({
       batch: null,
       sourceFiles: new Map(),
       pageAnalyses: new Map(),
       selectedDocumentId: null,
       selectedPageId: null,
+      outputLayout: DEFAULT_OUTPUT_LAYOUT,
+      outputVariants: new Map(),
+      outputStatus: "idle",
+      outputError: null,
     });
   },
 }));

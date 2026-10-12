@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     max_pdf_pages: int = Field(default=200, ge=1, le=1000)
     processing_timeout_seconds: int = Field(default=120, ge=10, le=900)
     temp_file_ttl_seconds: int = Field(default=3600, ge=60)
+    saved_output_retention_days: int = Field(default=30, ge=1, le=365)
+    max_saved_output_bytes: int = Field(default=50 * 1024 * 1024, ge=1024)
     worker_concurrency: int = Field(default=2, ge=1, le=16)
     imagekit_private_key: str = ""
     imagekit_public_key: str = ""

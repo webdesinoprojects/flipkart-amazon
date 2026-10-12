@@ -38,7 +38,7 @@ describe("public landing page", () => {
     expect(
       screen
         .getAllByRole("link", { name: /START PROCESSING/ })
-        .every((link) => link.getAttribute("href") === "/app"),
+        .every((link) => link.getAttribute("href") === "/register"),
     ).toBe(true);
     for (const link of document.querySelectorAll<HTMLAnchorElement>(
       'a[href^="#"]',

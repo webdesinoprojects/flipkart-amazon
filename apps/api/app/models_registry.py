@@ -10,6 +10,6 @@ from __future__ import annotations
 
 
 def import_all_models() -> None:
-    from . import models  # noqa: F401 - batches, documents, events, layouts
+    from . import models  # noqa: F401 - batches, outputs, documents, events, layouts
     from .modules.audit import models as audit_models  # noqa: F401
     from .modules.auth import models as auth_models  # noqa: F401

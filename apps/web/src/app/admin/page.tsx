@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
-import { DashboardShell } from "@/features/auth/dashboard-shell";
+import { DashboardShell } from "@/features/dashboard/dashboard-shell";
 import { adminAccess, currentUser } from "@/features/auth/server-api";
-import styles from "@/features/auth/dashboard.module.css";
+import styles from "@/features/dashboard/dashboard.module.css";
 export const metadata = {
   title: "Administration",
   robots: { index: false, follow: false },
@@ -16,7 +16,7 @@ export default async function AdminPage() {
         <header className={styles.panelHead}>
           <div>
             <span className={styles.eyebrow}>OPERATOR / ADMIN</span>
-            <h1>CONTROL PLANE.</h1>
+            <h1>Control plane</h1>
           </div>
         </header>
         <div className={styles.adminGrid}>

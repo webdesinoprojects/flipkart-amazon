@@ -72,6 +72,44 @@ describe("AmazonAdapter golden fixtures", () => {
 
     expect(kinds).toEqual(["seller_invoice", "shipping_label"]);
   });
+
+  it("recognizes the known layout when Amazon branding is image-only", async () => {
+    const source = await readFixture(FIXTURES[0]);
+    const analysis: PdfDocumentAnalysis = {
+      ...source,
+      pages: source.pages.map((page) => ({
+        ...page,
+        textItems: page.textItems.filter(
+          (item) => !item.text.toLowerCase().includes("amazon.in"),
+        ),
+      })),
+    };
+    const documentContext = createDocumentContext(
+      analysis,
+      "image-only-amazon-branding.pdf",
+    );
+
+    const detection = await adapter.detectDocument(documentContext);
+
+    expect(detection.marketplace).toBe("amazon");
+    expect(detection.confidence).toBe(1);
+    expect(detection.layoutFingerprint).toBe(AMAZON_LAYOUT_V1);
+    expect(
+      detection.evidence.some(
+        (item) => item.code === "amazon.anchor.amazon_in",
+      ),
+    ).toBe(false);
+
+    const classifications = await Promise.all(
+      analysis.pages.map((page) =>
+        adapter.classifyPage(createPageContext(documentContext, page)),
+      ),
+    );
+    expect(classifications.map((item) => item.pageKind)).toEqual([
+      "shipping_label",
+      "seller_invoice",
+    ]);
+  });
 });
 
 async function readFixture(name: string): Promise<PdfDocumentAnalysis> {
