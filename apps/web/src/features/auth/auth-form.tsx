@@ -43,8 +43,12 @@ export function AuthForm({
         router.refresh();
       } else if (mode === "register") {
         const result = await authApi.register(email, password);
-        setMessage(result.message);
-        formElement.reset();
+        if (result.delivery === "sent") {
+          router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+        } else {
+          setMessage(result.message);
+          formElement.reset();
+        }
       } else {
         const result = await authApi.forgotPassword(email);
         setMessage(result.message);

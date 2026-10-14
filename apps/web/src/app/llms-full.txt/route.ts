@@ -3,8 +3,6 @@ import { absoluteUrl, SITE_DESCRIPTION, SITE_NAME } from "@/lib/site";
 const content = `# ${SITE_NAME}: full product context
 
 Canonical URL: ${absoluteUrl("/")}
-Source: https://github.com/webdesinoprojects/flipkart-amazon
-
 ## Summary
 
 ${SITE_DESCRIPTION}
@@ -30,9 +28,7 @@ The Meesho adapter detects meaningful content bounds, trims unnecessary bottom a
 ## Output and validation
 
 - Output filename: PRINT_READY_LABELS.pdf
-- Page size: exactly 100 x 150 mm
-- Orientation: portrait
-- Page semantics: one shipment label per output page
+- Layouts: one 100 x 150 mm portrait label per page, or four labels per A4 sheet
 - Quality: original PDF/native page content is retained where the source PDF permits it; raster rendering is used for preview, detection, CV, and validation rather than final print output.
 - Validation evidence can include marketplace anchors, page type, geometry, expected text, crop boundaries, barcode/QR detection and decoding, clipping risk, and layout fingerprint.
 - Uncertain labels are routed to manual review instead of silently approved.
@@ -43,7 +39,11 @@ The review flow supports crop movement and resizing, rotation, re-detection, app
 
 ## Privacy and security model
 
-Normal processing is local to the browser. Selected source shipping PDFs are not uploaded by the primary workflow. Only the generated combined output PDF and aggregate non-PII counts are automatically retained for signed-in history. PDFs are treated as untrusted input, with document, page, and size limits. Optional server fallback uses private temporary storage and cleanup controls; optional cloud AI providers remain disabled without credentials and are secondary to deterministic validation.
+Normal processing is local to the browser. Selected source shipping PDFs are not uploaded by the primary workflow. Only the generated combined output PDF and aggregate non-PII counts are automatically retained for signed-in history. PDFs are treated as untrusted input, with document, page, and size limits.
+
+## Early-access usage
+
+One successfully prepared shipping label uses one credit. Early-access accounts receive 100 daily credits, with usage and remaining credits shown in the dashboard.
 
 ## Important limitations
 

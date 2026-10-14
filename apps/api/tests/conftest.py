@@ -80,6 +80,11 @@ class CapturingEmailProvider:
         link = self.last_link()
         return link.split("token=", 1)[1]
 
+    def last_code(self) -> str:
+        marker = "Your verification code is: "
+        body = self.messages[-1].text_body
+        return body.split(marker, 1)[1].splitlines()[0].strip()
+
 
 class CountingRateLimiter(RateLimiter):
     """In-test limiter with a controllable clock and no Valkey dependency.

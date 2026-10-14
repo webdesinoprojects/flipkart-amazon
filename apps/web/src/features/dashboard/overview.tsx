@@ -80,8 +80,8 @@ export function DashboardOverview({
           }
           note={
             summary?.activePlan
-              ? `${summary.activePlan} subscription`
-              : "No billing plan is assigned yet; local processing remains available."
+              ? `${summary.activePlan} · refreshes daily`
+              : "Credit status is temporarily unavailable."
           }
         />
 

@@ -44,9 +44,7 @@ export function MarketplaceComparison() {
       aria-labelledby="comparison-heading"
     >
       <div className={styles.intro}>
-        <span className={styles.kicker}>
-          REAL OUTPUT / SYNTHETIC SAMPLE DATA
-        </span>
+        <span className={styles.kicker}>BEFORE / AFTER</span>
         <div>
           <h2 id="comparison-heading">See exactly what stays.</h2>
           <p>

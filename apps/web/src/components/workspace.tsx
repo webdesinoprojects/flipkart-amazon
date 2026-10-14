@@ -60,7 +60,7 @@ export function Workspace({
       {!embedded && (
         <header className="site-header">
           <a className="brand" href="#top" id="top">
-            LABEL NORMALIZER
+            SELLERLABEL
           </a>
           <div className="header-meta">
             <span>LOCAL-FIRST</span>

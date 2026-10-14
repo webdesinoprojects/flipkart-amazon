@@ -30,6 +30,25 @@ The command uses a hidden prompt. For non-interactive deployment, mount a secret
 
 Compose starts Mailpit. Verification and reset messages are captured at `http://localhost:8080/mailpit/` and are never delivered externally. Set `EMAIL_PROVIDER=disabled` to disable delivery. A generic SMTP server can be configured in production without changing account logic.
 
+Verification messages contain both a six-digit, email-bound, single-use code and a secure fallback link. This supports a seller who opens email on a phone while registering on a laptop. Confirming either credential revokes the other.
+
+Production uses Resend through the generic SMTP capability boundary:
+
+```dotenv
+EMAIL_PROVIDER=smtp
+SMTP_HOST=smtp.resend.com
+SMTP_PORT=587
+SMTP_USERNAME=resend
+SMTP_PASSWORD=re_your_private_key
+SMTP_STARTTLS=true
+EMAIL_FROM_ADDRESS=accounts@sellerlabel.in
+EMAIL_FROM_NAME=SellerLabel
+EMAIL_REPLY_TO=sellerlabels@gmail.com
+AUTH_REQUIRE_VERIFIED_EMAIL=true
+```
+
+The private Resend key belongs only in the server `.env`; it must never be committed or pasted into browser configuration.
+
 ## Session policy
 
 Sessions have idle and absolute expiration, are checked against the database on every request, and are revoked after a password reset or security-version change. `/dashboard/security` lists active devices and lets the owner revoke each one. Suspended accounts and stale sessions cannot authenticate.

@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title description">
-  <title id="title">Label Normalizer</title>
+  <title id="title">SellerLabel</title>
   <desc id="description">A white shipping label crop mark and barcode on a black square.</desc>
   <rect width="512" height="512" fill="#050505"/>
   <path d="M72 180V72h108M332 72h108v108M440 332v108H332M180 440H72V332" fill="none" stroke="#fff" stroke-width="32" stroke-linecap="square"/>

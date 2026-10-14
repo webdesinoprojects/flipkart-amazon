@@ -19,10 +19,14 @@ def test_registration_accepts_a_new_account_and_sends_a_verification_link(auth_e
     body = response.json()
     assert body["status"] == "accepted"
     assert body["delivery"] == "sent"
-    assert "verification link" in body["message"]
+    assert "six-digit verification code" in body["message"]
     assert user_count(auth_env) == 1
     assert auth_env.email.messages[-1].to == EMAIL
     assert "verify-email?token=" in auth_env.email.last_link()
+    assert auth_env.email.last_code().isdigit()
+    assert len(auth_env.email.last_code()) == 6
+    assert auth_env.email.messages[-1].html_body is not None
+    assert "SELLERLABEL" in auth_env.email.messages[-1].html_body
 
 
 def test_registration_never_returns_a_session(auth_env):

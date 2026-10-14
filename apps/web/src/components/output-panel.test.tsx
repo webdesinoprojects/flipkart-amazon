@@ -122,6 +122,11 @@ describe("OutputPanel output layout selection", () => {
     await userEvent.click(screen.getByRole("button", { name: "PREVIEW" }));
     const frame = screen.getByTitle(/8 labels \/ 2 a4 sheets/i);
     expect(frame).toHaveAttribute("src", selected.objectUrl!);
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "DOWNLOAD PDF" }),
+      ).toBeEnabled(),
+    );
 
     const anchorClick = vi.fn();
     const createElement = document.createElement.bind(document);
@@ -272,6 +277,21 @@ describe("OutputPanel automatic history retention", () => {
     expect(
       screen.queryByRole("button", { name: /save to history/i }),
     ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "DOWNLOAD PDF" })).toBeEnabled();
+  });
+
+  it("keeps export actions locked when the credit-authorized save fails", async () => {
+    vi.mocked(saveBatchToHistory).mockRejectedValueOnce(
+      new Error("Your daily label credit limit has been reached."),
+    );
+    renderPanel();
+
+    await waitFor(() =>
+      expect(screen.getByText(/daily label credit limit/i)).toBeInTheDocument(),
+    );
+    expect(screen.getByRole("button", { name: "PREVIEW" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "DOWNLOAD PDF" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "PRINT ALL" })).toBeDisabled();
   });
 
   it("saves the newly selected layout once, without duplicating the batch", async () => {

@@ -107,8 +107,16 @@ def history(
 
 
 @router.get("/dashboard/summary", response_model=DashboardSummaryOut)
-def summary(session: SessionDep, authenticated: CurrentSessionDep) -> DashboardSummaryOut:
-    return dashboard_summary(session, user_id=authenticated.user.id)
+def summary(
+    session: SessionDep,
+    settings: SettingsDep,
+    authenticated: CurrentSessionDep,
+) -> DashboardSummaryOut:
+    return dashboard_summary(
+        session,
+        user_id=authenticated.user.id,
+        daily_credit_limit=settings.early_access_daily_credits,
+    )
 
 
 @router.get("/history/batches/{batch_id}/output")

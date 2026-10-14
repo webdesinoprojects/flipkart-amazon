@@ -13,7 +13,7 @@ DEVELOPMENT_AUTH_SECRET = "dev-only-insecure-auth-secret-change-me"  # noqa: S10
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    app_name: str = "Marketplace Shipping Label Normalizer API"
+    app_name: str = "SellerLabel API"
     environment: Literal["development", "test", "production"] = "development"
     database_url: str = "postgresql+psycopg://labels:labels@postgres:5432/labels"
     valkey_url: str = "redis://valkey:6379/0"
@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     temp_file_ttl_seconds: int = Field(default=3600, ge=60)
     saved_output_retention_days: int = Field(default=30, ge=1, le=365)
     max_saved_output_bytes: int = Field(default=50 * 1024 * 1024, ge=1024)
+    early_access_daily_credits: int = Field(default=100, ge=1, le=100_000)
     worker_concurrency: int = Field(default=2, ge=1, le=16)
     imagekit_private_key: str = ""
     imagekit_public_key: str = ""
@@ -89,8 +90,9 @@ class Settings(BaseSettings):
     smtp_password: str = ""
     smtp_starttls: bool = False
     smtp_timeout_seconds: float = Field(default=10, gt=0, le=60)
-    email_from_address: str = "no-reply@label-normalizer.local"
-    email_from_name: str = "Label Normalizer"
+    email_from_address: str = "accounts@sellerlabel.in"
+    email_from_name: str = "SellerLabel"
+    email_reply_to: str = "sellerlabels@gmail.com"
 
     # --- Request bounds -----------------------------------------------------
     max_json_body_bytes: int = Field(default=16 * 1024, ge=1024, le=1024 * 1024)

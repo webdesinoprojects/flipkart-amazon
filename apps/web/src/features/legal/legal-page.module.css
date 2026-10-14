@@ -1,0 +1,129 @@
+.page {
+  min-height: 100vh;
+  background: #f3f5ef;
+  color: #171b17;
+  font-family: var(--font-mono);
+}
+
+.page a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 78px;
+  padding: 0 clamp(18px, 5vw, 76px);
+  border-bottom: 1px solid #cfd5cc;
+}
+
+.header > a:last-child {
+  padding: 13px 18px;
+  border-radius: 999px;
+  background: #171b17;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.document {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.7fr) minmax(480px, 1.3fr);
+  gap: clamp(50px, 10vw, 160px);
+  width: min(1260px, calc(100% - 40px));
+  margin-inline: auto;
+  padding: clamp(70px, 10vw, 140px) 0;
+}
+
+.intro {
+  position: sticky;
+  top: 45px;
+  align-self: start;
+}
+
+.intro > span,
+.intro small {
+  color: #617067;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.intro h1 {
+  margin: 18px 0 22px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(48px, 6vw, 82px);
+  font-weight: 400;
+  letter-spacing: -0.06em;
+  line-height: 0.95;
+}
+
+.intro p {
+  margin: 0 0 24px;
+  color: #687067;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.content {
+  counter-reset: section;
+  border-top: 1px solid #cfd5cc;
+}
+
+.content section {
+  padding: 29px 0 33px;
+  border-bottom: 1px solid #cfd5cc;
+}
+
+.content h2 {
+  margin: 0 0 13px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 28px;
+  font-weight: 400;
+  letter-spacing: -0.025em;
+}
+
+.content p,
+.content li {
+  color: #555f56;
+  font-size: 13px;
+  line-height: 1.75;
+}
+
+.content p {
+  margin: 10px 0 0;
+}
+
+.content ul {
+  margin: 12px 0 0;
+  padding-left: 20px;
+}
+
+.content a {
+  color: #117647;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 34px;
+  padding: 28px clamp(18px, 5vw, 76px);
+  border-top: 1px solid #cfd5cc;
+  color: #687067;
+  font-size: 10px;
+}
+
+@media (max-width: 760px) {
+  .document {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+
+  .intro {
+    position: static;
+  }
+}

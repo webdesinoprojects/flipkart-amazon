@@ -28,7 +28,8 @@ describe("public landing page", () => {
       /FROM MIXED PDFS/,
       /ONE WORKFLOW/,
       /THE DETAILS/,
-      /A PLAN FOR/,
+      /BEFORE YOURFIRST BATCH/,
+      /START FREE/,
       /YOUR DOCUMENTS/,
     ]) {
       expect(screen.getByRole("heading", { name })).toBeInTheDocument();
@@ -37,8 +38,13 @@ describe("public landing page", () => {
       screen.getByRole("link", { name: /START PROCESSING/ }),
     ).toHaveAttribute("href", "/register");
     expect(
-      screen.getByRole("link", { name: /Process your labels/ }),
+      screen.getByRole("link", { name: /Crop my labels free/ }),
     ).toHaveAttribute("href", "/register");
+
+    const heroVideo = document.querySelector("video");
+    expect(heroVideo).toHaveAttribute("autoplay");
+    expect(heroVideo).toHaveAttribute("loop");
+    expect(heroVideo).toHaveAttribute("playsinline");
 
     fireEvent.click(screen.getByRole("tab", { name: /Amazon/ }));
     expect(

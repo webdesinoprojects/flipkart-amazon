@@ -3,6 +3,6 @@ export const navigation = [
   ["Examples", "#comparison"],
   ["How It Works", "#workflow"],
   ["Features", "#features"],
+  ["FAQ", "#faq"],
   ["Pricing", "#pricing"],
-  ["Privacy", "#privacy"],
 ] as const;

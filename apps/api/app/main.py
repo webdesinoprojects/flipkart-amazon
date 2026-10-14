@@ -57,7 +57,7 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(
-    title="Marketplace Shipping Label Normalizer API",
+    title="SellerLabel API",
     version="0.2.0",
     lifespan=lifespan,
 )

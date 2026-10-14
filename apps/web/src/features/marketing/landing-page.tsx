@@ -6,6 +6,7 @@ import { MarketplaceComparison } from "./marketplace-comparison";
 import { navigation } from "./navigation";
 import { ProductSections } from "./product-sections";
 import { PricingFooter } from "./pricing-footer";
+import { SellerFaq } from "./seller-faq";
 import styles from "./marketing.module.css";
 import navStyles from "./navigation.module.css";
 
@@ -56,7 +57,7 @@ export function LandingPage() {
               </p>
               <div className={styles.heroActions}>
                 <Link className={styles.primaryCta} href="/register">
-                  Process your labels <span aria-hidden="true">↗</span>
+                  Crop my labels free <span aria-hidden="true">↗</span>
                 </Link>
                 <a className={styles.secondaryCta} href="#comparison">
                   See before and after <span aria-hidden="true">↓</span>
@@ -82,6 +83,7 @@ export function LandingPage() {
         </section>
         <MarketplaceComparison />
         <ProductSections />
+        <SellerFaq />
         <PricingFooter />
       </main>
     </div>

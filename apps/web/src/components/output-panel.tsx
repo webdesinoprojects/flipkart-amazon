@@ -44,7 +44,8 @@ export function OutputPanel({ batch }: { readonly batch: Batch }) {
     batch.combinedPdf?.layout === outputLayout ? batch.combinedPdf : null;
   const generating = outputStatus === "generating";
   const descriptor = describeOutputLayout(outputLayout);
-  const actionsDisabled = generating || !artifact?.objectUrl;
+  const previewDisabled = generating || !artifact?.objectUrl;
+  const exportDisabled = previewDisabled || saveState !== "saved";
 
   function changeLayout(next: typeof outputLayout): void {
     setPrintMessage(null);
@@ -85,7 +86,7 @@ export function OutputPanel({ batch }: { readonly batch: Batch }) {
           {saveState === "failed" ? (
             <button
               className="retry-history-action"
-              disabled={actionsDisabled}
+              disabled={previewDisabled}
               onClick={retrySave}
               type="button"
             >
@@ -93,21 +94,21 @@ export function OutputPanel({ batch }: { readonly batch: Batch }) {
             </button>
           ) : null}
           <button
-            disabled={actionsDisabled}
+            disabled={previewDisabled}
             onClick={() => setShowPreview((current) => !current)}
             type="button"
           >
             PREVIEW
           </button>
           <button
-            disabled={actionsDisabled}
+            disabled={exportDisabled}
             onClick={() => artifact && downloadCombinedPdf(artifact)}
             type="button"
           >
             DOWNLOAD PDF
           </button>
           <button
-            disabled={actionsDisabled}
+            disabled={exportDisabled}
             onClick={() => {
               const opened = artifact ? printCombinedPdf(artifact) : false;
               setPrintMessage(

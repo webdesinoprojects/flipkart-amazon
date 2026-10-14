@@ -53,6 +53,7 @@ class SmtpEmailProvider:
         timeout_seconds: float,
         from_address: str,
         from_name: str,
+        reply_to: str,
     ) -> None:
         self._host = host
         self._port = port
@@ -62,6 +63,7 @@ class SmtpEmailProvider:
         self._timeout_seconds = timeout_seconds
         self._from_address = from_address
         self._from_name = from_name
+        self._reply_to = reply_to
 
     @property
     def available(self) -> bool:
@@ -72,8 +74,12 @@ class SmtpEmailProvider:
         mime["From"] = f"{self._from_name} <{self._from_address}>"
         mime["To"] = message.to
         mime["Subject"] = message.subject
+        if self._reply_to:
+            mime["Reply-To"] = self._reply_to
         mime["Auto-Submitted"] = "auto-generated"
         mime.set_content(message.text_body)
+        if message.html_body:
+            mime.add_alternative(message.html_body, subtype="html")
         try:
             # Every outbound call is bounded; a hung SMTP server must not pin a
             # request worker. There is no retry here: the caller already returns
@@ -106,6 +112,7 @@ def build_email_provider(settings: Settings) -> EmailProvider:
             timeout_seconds=settings.smtp_timeout_seconds,
             from_address=settings.email_from_address,
             from_name=settings.email_from_name,
+            reply_to=settings.email_reply_to,
         )
     return DisabledEmailProvider()
 

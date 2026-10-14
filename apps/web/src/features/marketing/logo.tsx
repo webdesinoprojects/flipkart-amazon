@@ -31,7 +31,7 @@ export function Logo({
     <Link
       className={wordmark ? styles.logoWithWordmark : styles.logo}
       href={href}
-      aria-label="Label Normalizer home"
+      aria-label="SellerLabel home"
     >
       {wordmark ? (
         <span className={styles.logo}>
@@ -40,7 +40,7 @@ export function Logo({
       ) : (
         <LogoMark />
       )}
-      {wordmark && <span>LABEL / NORMALIZER</span>}
+      {wordmark && <span>SELLERLABEL</span>}
     </Link>
   );
 }

@@ -161,7 +161,7 @@ def create_admin(
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m app.cli",
-        description="Operator commands for the Label Normalizer API.",
+        description="Operator commands for the SellerLabel API.",
         allow_abbrev=False,
     )
     commands = parser.add_subparsers(dest="command", required=True)

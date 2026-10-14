@@ -43,16 +43,16 @@ const marketplaces = [
 
 const features = [
   "Mixed Flipkart, Amazon and Meesho batches",
-  "PDF count does not equal shipment count",
-  "PDF-native crop and normalization",
-  "Exactly 100 × 150 mm portrait output",
+  "Handles PDFs with multiple orders on one page",
+  "Sharp, scannable labels without blurry screenshots",
+  "100 × 150 mm and A4 four-up output",
   "Barcode and QR validation",
-  "Confidence-based review",
+  "Flags any label it is not sure about",
   "Manual crop and rotation",
   "Combined PRINT_READY_LABELS.pdf",
   "Preview, Download and Print All",
-  "Browser-local deterministic processing",
-  "Failed pages do not kill the whole batch",
+  "Your original files never leave your browser",
+  "One bad page will not stop the rest from printing",
 ];
 
 export function ProductSections() {

@@ -27,7 +27,7 @@ services:
       context: .
       dockerfile: apps/web/Dockerfile
       args:
-        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://marketplace-label-normalizer.onrender.com}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://sellerlabel.in}
     restart: unless-stopped
     environment:
       HOSTNAME: 0.0.0.0
@@ -83,6 +83,7 @@ services:
       TEMP_FILE_TTL_SECONDS: ${TEMP_FILE_TTL_SECONDS:-3600}
       SAVED_OUTPUT_RETENTION_DAYS: ${SAVED_OUTPUT_RETENTION_DAYS:-30}
       MAX_SAVED_OUTPUT_BYTES: ${MAX_SAVED_OUTPUT_BYTES:-52428800}
+      EARLY_ACCESS_DAILY_CREDITS: ${EARLY_ACCESS_DAILY_CREDITS:-100}
       IMAGEKIT_PRIVATE_KEY: ${IMAGEKIT_PRIVATE_KEY:-}
       IMAGEKIT_PUBLIC_KEY: ${IMAGEKIT_PUBLIC_KEY:-}
       IMAGEKIT_URL_ENDPOINT: ${IMAGEKIT_URL_ENDPOINT:-}
@@ -132,8 +133,9 @@ services:
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_STARTTLS: ${SMTP_STARTTLS:-false}
       SMTP_TIMEOUT_SECONDS: ${SMTP_TIMEOUT_SECONDS:-10}
-      EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-no-reply@label-normalizer.local}
-      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-Label Normalizer}
+      EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-accounts@sellerlabel.in}
+      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-SellerLabel}
+      EMAIL_REPLY_TO: ${EMAIL_REPLY_TO:-sellerlabels@gmail.com}
       MAX_JSON_BODY_BYTES: ${MAX_JSON_BODY_BYTES:-16384}
     expose:
       - "8000"

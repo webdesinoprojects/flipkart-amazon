@@ -27,8 +27,8 @@ from .schemas import (
     EmailOnlyRequest,
     PasswordResetCompletedOut,
     PasswordResetRequest,
-    TokenRequest,
     VerificationConfirmedOut,
+    VerificationConfirmRequest,
 )
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
@@ -76,7 +76,7 @@ def request_email_verification(
 def confirm_email_verification(
     request: Request,
     response: Response,
-    payload: TokenRequest,
+    payload: VerificationConfirmRequest,
     db: SessionDep,
     settings: SettingsDep,
     limiter: LimiterDep,
@@ -87,8 +87,21 @@ def confirm_email_verification(
     assert_trusted_origin(request, settings=settings)
     rules = limits.build_rate_limits(settings)
     try:
-        limits.enforce(limiter, [(rules.reset_ip, context.client_ip or "")])
-        user = recovery.confirm_verification(token=payload.token, context=context)
+        account_key = _account_key(payload.email) if payload.email else ""
+        limits.enforce(
+            limiter,
+            [
+                (rules.reset_ip, context.client_ip or ""),
+                (rules.login_account, account_key),
+            ],
+        )
+        user = (
+            recovery.confirm_verification(token=payload.token, context=context)
+            if payload.token
+            else recovery.confirm_verification_code(
+                email=payload.email or "", code=payload.code or "", context=context
+            )
+        )
     except Exception:
         db.commit()
         raise

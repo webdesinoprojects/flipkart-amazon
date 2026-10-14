@@ -104,12 +104,14 @@ export const authApi = {
       method: "POST",
       body: JSON.stringify({ token, password }),
     }),
-  verifyEmail: (token: string) =>
+  verifyEmail: (
+    verification: { token: string } | { email: string; code: string },
+  ) =>
     browserApiRequest<{ status: string; user: AuthUser }>(
       "/api/v1/auth/verify-email/confirm",
       {
         method: "POST",
-        body: JSON.stringify({ token }),
+        body: JSON.stringify(verification),
       },
     ),
   requestVerification: (email: string) =>

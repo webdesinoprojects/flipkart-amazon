@@ -62,8 +62,8 @@ def test_saved_output_history_and_summary_are_real_and_owner_scoped(auth_env):
     assert summary["batchesToday"] == 1
     assert summary["totalLabels"] == 2
     assert summary["totalBatches"] == 1
-    assert summary["availableCredits"] is None
-    assert summary["activePlan"] is None
+    assert summary["availableCredits"] == 98
+    assert summary["activePlan"] == "Early access"
     assert len(summary["dailyUsage"]) == 14
 
     output = auth_env.client.get(saved["downloadUrl"])
@@ -190,3 +190,43 @@ def test_history_filters_search_sort_and_pagination_are_server_side(auth_env):
         "/api/v1/history/batches", params={"period": "forever", "limit": 10}
     )
     assert invalid.status_code == 422
+
+
+def test_early_access_daily_credit_limit_is_enforced_server_side(auth_env):
+    csrf = auth_env.create_account("daily-credits@example.com")
+    full_allowance = metadata("batch-credit-full-0001", pages=100)
+    first = save(
+        auth_env,
+        csrf,
+        body=full_allowance,
+        pdf=generated_pdf(100),
+    )
+    assert first.status_code == 201, first.text
+
+    over_limit = save(
+        auth_env,
+        csrf,
+        body=metadata("batch-credit-extra-002", pages=1),
+        pdf=generated_pdf(1),
+    )
+    assert over_limit.status_code == 429
+    assert over_limit.json()["error"]["code"] == "DAILY_CREDIT_LIMIT_REACHED"
+    assert int(over_limit.headers["retry-after"]) > 0
+
+    summary = auth_env.client.get("/api/v1/dashboard/summary").json()
+    assert summary["usageToday"] == 100
+    assert summary["availableCredits"] == 0
+
+
+def test_replacing_one_batch_only_charges_its_latest_label_count(auth_env):
+    csrf = auth_env.create_account("credit-replacement@example.com")
+    first = metadata("batch-credit-replace-01", pages=80)
+    assert save(auth_env, csrf, body=first, pdf=generated_pdf(80)).status_code == 201
+
+    replacement = metadata("batch-credit-replace-01", pages=100)
+    response = save(auth_env, csrf, body=replacement, pdf=generated_pdf(100))
+    assert response.status_code == 200, response.text
+
+    summary = auth_env.client.get("/api/v1/dashboard/summary").json()
+    assert summary["usageToday"] == 100
+    assert summary["availableCredits"] == 0

@@ -83,7 +83,7 @@ export async function normalizePdfRegionNative(
   }
 
   const outputDocument = await PDFDocument.create();
-  outputDocument.setProducer("Marketplace Shipping Label Normalizer");
+  outputDocument.setProducer("SellerLabel");
   const outputPage = outputDocument.addPage([
     TARGET_LABEL_SIZE_PT.width,
     TARGET_LABEL_SIZE_PT.height,
@@ -168,7 +168,7 @@ export async function assembleNormalizedLabels(
 
   const output = await PDFDocument.create();
   output.setTitle("PRINT_READY_LABELS");
-  output.setProducer("Marketplace Shipping Label Normalizer");
+  output.setProducer("SellerLabel");
   const ordered = [...labels].sort(
     (left, right) => left.outputOrder - right.outputOrder,
   );

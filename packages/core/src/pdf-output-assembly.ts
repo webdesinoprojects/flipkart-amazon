@@ -48,7 +48,7 @@ export async function assembleFourUpSheets(
   const descriptor = describeOutputLayout("a4_4up");
   const output = await PDFDocument.create();
   output.setTitle("PRINT_READY_LABELS_A4");
-  output.setProducer("Marketplace Shipping Label Normalizer");
+  output.setProducer("SellerLabel");
 
   // Source order is the contract: upload order, then source page, then region.
   // Marketplace identity has no influence on slot geometry or ordering.
@@ -113,8 +113,7 @@ function drawCutGuides(sheet: PDFPage): void {
   const { columns, rows, cutGuideWidthPt } = A4_SHEET_CONFIG;
   const slotWidth = A4_SIZE_PT.width / columns;
   const slotHeight =
-    (A4_SIZE_PT.height - A4_ROW_GUTTER_PT * Math.max(0, rows - 1)) /
-    rows;
+    (A4_SIZE_PT.height - A4_ROW_GUTTER_PT * Math.max(0, rows - 1)) / rows;
   for (let column = 1; column < columns; column += 1) {
     sheet.drawLine({
       start: { x: column * slotWidth, y: 0 },
@@ -125,9 +124,7 @@ function drawCutGuides(sheet: PDFPage): void {
   }
   for (let row = 1; row < rows; row += 1) {
     const y =
-      A4_SIZE_PT.height -
-      row * slotHeight -
-      (row - 0.5) * A4_ROW_GUTTER_PT;
+      A4_SIZE_PT.height - row * slotHeight - (row - 0.5) * A4_ROW_GUTTER_PT;
     sheet.drawLine({
       start: { x: 0, y },
       end: { x: A4_SIZE_PT.width, y },

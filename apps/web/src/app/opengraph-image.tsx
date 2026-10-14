@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const alt =
-  "Label Normalizer — Flipkart, Amazon, and Meesho PDFs to print-ready labels";
+  "SellerLabel — Flipkart, Amazon, and Meesho PDFs to print-ready labels";
 export const size = {
   width: 1200,
   height: 630,
@@ -33,8 +33,8 @@ export default function OpenGraphImage() {
           letterSpacing: "-1px",
         }}
       >
-        <span>LABEL NORMALIZER</span>
-        <span style={{ color: "#a3a3a3" }}>LOCAL-FIRST / PDF-NATIVE</span>
+        <span>SELLERLABEL</span>
+        <span style={{ color: "#a3a3a3" }}>PRIVATE / PRINT READY</span>
       </div>
       <div style={{ display: "flex", flexDirection: "column" }}>
         <div

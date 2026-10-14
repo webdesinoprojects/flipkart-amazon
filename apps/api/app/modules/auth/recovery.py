@@ -35,7 +35,13 @@ from .notifications import (
 from .passwords import PasswordHashingService, PasswordPolicyError
 from .repository import AuthRepository
 from .service import RequestContext
-from .tokens import digest_token, generate_token, looks_like_token
+from .tokens import (
+    digest_token,
+    generate_token,
+    generate_verification_code,
+    looks_like_token,
+    verification_code_digest,
+)
 
 EMAIL_VERIFICATION = "email_verification"
 PASSWORD_RESET = "password_reset"  # noqa: S105 - token purpose, not a secret
@@ -76,7 +82,7 @@ class RecoveryService:
         if user.email_verified:
             # Nothing to do, but the response must not differ from the others.
             return self._generic_outcome()
-        token = self._issue_token(user, purpose=EMAIL_VERIFICATION)
+        token, code = self._issue_verification_credentials(user)
         self._record(
             context,
             event=audit.EMAIL_VERIFICATION_REQUESTED,
@@ -84,22 +90,45 @@ class RecoveryService:
             user_id=user.id,
         )
         return self._deliver(
-            verification_message(self._settings, to=user.email_display, token=token)
+            verification_message(self._settings, to=user.email_display, token=token, code=code)
         )
 
     def notify_existing_account(self, user: UserRecord) -> DeliveryOutcome:
         return self._deliver(existing_account_message(self._settings, to=user.email_display))
 
     def send_verification_for_new_account(self, user: UserRecord) -> DeliveryOutcome:
-        token = self._issue_token(user, purpose=EMAIL_VERIFICATION)
+        token, code = self._issue_verification_credentials(user)
         return self._deliver(
-            verification_message(self._settings, to=user.email_display, token=token)
+            verification_message(self._settings, to=user.email_display, token=token, code=code)
         )
 
     def confirm_verification(self, *, token: str, context: RequestContext) -> UserRecord:
         user = self._consume(token, purpose=EMAIL_VERIFICATION, context=context)
+        return self._complete_verification(user, context=context)
+
+    def confirm_verification_code(
+        self, *, email: str, code: str, context: RequestContext
+    ) -> UserRecord:
+        """Consume a six-digit code bound to the submitted canonical address."""
+        user = self._lookup(email)
+        if user is None or not code.isdigit() or len(code) != 6:
+            self._record_rejection(context, purpose=EMAIL_VERIFICATION, reason="invalid_code")
+            raise InvalidTokenError()
+        digest = verification_code_digest(
+            user.email_canonical, code, secret=self._settings.auth_secret
+        )
+        verified = self._consume_digest(digest, purpose=EMAIL_VERIFICATION, context=context)
+        if verified.id != user.id:
+            self._record_rejection(context, purpose=EMAIL_VERIFICATION, reason="mismatch")
+            raise InvalidTokenError()
+        return self._complete_verification(verified, context=context)
+
+    def _complete_verification(self, user: UserRecord, *, context: RequestContext) -> UserRecord:
         if not user.email_verified:
             user.email_verified_at = utc_now()
+        self.repository.revoke_outstanding_tokens(
+            user.id, purpose=EMAIL_VERIFICATION, now=utc_now()
+        )
         self._record(
             context,
             event=audit.EMAIL_VERIFICATION_CONFIRMED,
@@ -187,12 +216,36 @@ class RecoveryService:
         )
         return token
 
+    def _issue_verification_credentials(self, user: UserRecord) -> tuple[str, str]:
+        now = utc_now()
+        self.repository.revoke_outstanding_tokens(user.id, purpose=EMAIL_VERIFICATION, now=now)
+        token = generate_token()
+        code = generate_verification_code()
+        expires_at = now + timedelta(seconds=self._ttl_seconds(EMAIL_VERIFICATION))
+        for digest in (
+            digest_token(token, secret=self._settings.auth_secret),
+            verification_code_digest(user.email_canonical, code, secret=self._settings.auth_secret),
+        ):
+            self.repository.add_one_time_token(
+                OneTimeTokenRecord(
+                    user_id=user.id,
+                    purpose=EMAIL_VERIFICATION,
+                    token_digest=digest,
+                    created_at=now,
+                    expires_at=expires_at,
+                )
+            )
+        return token, code
+
     def _consume(self, token: str, *, purpose: str, context: RequestContext) -> UserRecord:
         if not looks_like_token(token):
             self._record_rejection(context, purpose=purpose, reason="malformed")
             raise InvalidTokenError()
-        now = utc_now()
         digest = digest_token(token, secret=self._settings.auth_secret)
+        return self._consume_digest(digest, purpose=purpose, context=context)
+
+    def _consume_digest(self, digest: str, *, purpose: str, context: RequestContext) -> UserRecord:
+        now = utc_now()
         user_id = self.repository.consume_one_time_token(digest, purpose=purpose, now=now)
         if user_id is None:
             existed = self.repository.token_exists(digest, purpose=purpose)

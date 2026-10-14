@@ -8,9 +8,11 @@ import styles from "./auth.module.css";
 export function TokenForm({
   mode,
   token,
+  email = "",
 }: {
   mode: "verify" | "reset";
   token: string;
+  email?: string;
 }) {
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
@@ -22,9 +24,15 @@ export function TokenForm({
     setError("");
     try {
       if (!token)
-        throw new AuthApiError("This link is incomplete or invalid.", 400);
+        if (mode === "reset")
+          throw new AuthApiError("This link is incomplete or invalid.", 400);
       if (mode === "verify") {
-        await authApi.verifyEmail(token);
+        const form = new FormData(event.currentTarget);
+        const submittedEmail = String(form.get("email") ?? email).trim();
+        const code = String(form.get("code") ?? "").trim();
+        await authApi.verifyEmail(
+          token ? { token } : { email: submittedEmail, code },
+        );
         setMessage("Email verified. You can now sign in.");
       } else {
         const password = String(
@@ -49,6 +57,36 @@ export function TokenForm({
 
   return (
     <form className={styles.form} onSubmit={submit}>
+      {mode === "verify" && !token && (
+        <>
+          <label>
+            <span>EMAIL ADDRESS</span>
+            <input
+              name="email"
+              type="email"
+              autoComplete="email"
+              defaultValue={email}
+              required
+              maxLength={254}
+            />
+          </label>
+          <label>
+            <span>6-DIGIT VERIFICATION CODE</span>
+            <input
+              className={styles.codeInput}
+              name="code"
+              type="text"
+              autoComplete="one-time-code"
+              inputMode="numeric"
+              pattern="[0-9]{6}"
+              minLength={6}
+              maxLength={6}
+              required
+              autoFocus
+            />
+          </label>
+        </>
+      )}
       {mode === "reset" && (
         <label>
           <span>NEW PASSWORD</span>

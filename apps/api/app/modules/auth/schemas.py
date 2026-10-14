@@ -15,7 +15,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 _STRICT = ConfigDict(extra="forbid")
 
@@ -46,6 +46,24 @@ class TokenRequest(BaseModel):
     model_config = _STRICT
 
     token: str = Field(min_length=16, max_length=512)
+
+
+class VerificationConfirmRequest(BaseModel):
+    """Accept either the emailed link token or an email-bound six-digit code."""
+
+    model_config = _STRICT
+
+    token: str | None = Field(default=None, min_length=16, max_length=512)
+    email: str | None = Field(default=None, min_length=3, max_length=254)
+    code: str | None = Field(default=None, pattern=r"^\d{6}$")
+
+    @model_validator(mode="after")
+    def exactly_one_verification_method(self) -> VerificationConfirmRequest:
+        uses_link = self.token is not None
+        uses_code = self.email is not None and self.code is not None
+        if uses_link == uses_code:
+            raise ValueError("Provide either a link token or an email and six-digit code.")
+        return self
 
 
 class PasswordResetRequest(BaseModel):

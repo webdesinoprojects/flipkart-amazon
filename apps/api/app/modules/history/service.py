@@ -15,6 +15,12 @@ from ...models import BatchRecord, SavedOutputRecord
 from ...platform.clock import as_utc
 from ...platform.http.errors import ApiError
 from ...providers.storage import StorageProvider
+from ..credits.service import (
+    EARLY_ACCESS_PLAN,
+    assert_daily_allowance,
+    available_credits,
+    lock_account_for_credit_check,
+)
 from .presenters import present_saved_batch
 from .schemas import DailyUsageOut, DashboardSummaryOut, SavedBatchListOut, SavedBatchMetadata
 
@@ -69,10 +75,18 @@ def save_generated_batch(
       constraint and then treated as a replacement.
     """
     digest = _request_digest(metadata, pdf_sha256)
+    lock_account_for_credit_check(session, user_id=user_id)
     existing = _find_by_client_id(session, user_id, metadata.clientBatchId)
     if existing is not None:
         if existing.request_digest == digest:
             return existing, False
+        assert_daily_allowance(
+            session,
+            user_id=user_id,
+            requested_labels=metadata.labelsReady,
+            daily_limit=settings.early_access_daily_credits,
+            replaced_batch=existing,
+        )
         return (
             _replace_saved_output(
                 session=session,
@@ -87,6 +101,13 @@ def save_generated_batch(
             ),
             False,
         )
+
+    assert_daily_allowance(
+        session,
+        user_id=user_id,
+        requested_labels=metadata.labelsReady,
+        daily_limit=settings.early_access_daily_credits,
+    )
 
     stored = storage.put(pdf_data, "PRINT_READY_LABELS.pdf", category="saved-output")
     now = datetime.now(UTC)
@@ -309,7 +330,9 @@ def _period_start(period: str) -> datetime | None:
     return local_start.astimezone(UTC)
 
 
-def dashboard_summary(session: Session, *, user_id: str) -> DashboardSummaryOut:
+def dashboard_summary(
+    session: Session, *, user_id: str, daily_credit_limit: int
+) -> DashboardSummaryOut:
     now = datetime.now(UTC)
     today = now.astimezone(INDIA_TIME).date()
     first_day = today - timedelta(days=13)
@@ -342,8 +365,13 @@ def dashboard_summary(session: Session, *, user_id: str) -> DashboardSummaryOut:
         batchesToday=by_day[today]["batches"],
         totalLabels=total_labels,
         totalBatches=total_batches,
-        availableCredits=None,
-        activePlan=None,
+        availableCredits=available_credits(
+            session,
+            user_id=user_id,
+            daily_limit=daily_credit_limit,
+            now=now,
+        ),
+        activePlan=EARLY_ACCESS_PLAN,
         dailyUsage=[
             DailyUsageOut(date=day, labels=values["labels"], batches=values["batches"])
             for day, values in by_day.items()

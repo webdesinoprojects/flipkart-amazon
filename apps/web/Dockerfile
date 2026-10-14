@@ -1,6 +1,6 @@
 FROM node:24-bookworm-slim AS build
 WORKDIR /app
-ARG NEXT_PUBLIC_SITE_URL=https://marketplace-label-normalizer.onrender.com
+ARG NEXT_PUBLIC_SITE_URL=https://sellerlabel.in
 ENV NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
 
 COPY package.json package-lock.json ./

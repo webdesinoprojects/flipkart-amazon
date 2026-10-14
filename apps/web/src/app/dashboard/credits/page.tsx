@@ -13,7 +13,7 @@ export default async function CreditsPage() {
     <DashboardPage
       eyebrow="ACCOUNT / USAGE"
       title="Usage without guesswork."
-      description="Saved output usage is measured from durable batches. Paid credits stay inactive until a subscription is genuinely assigned."
+      description="One successfully prepared label uses one credit. Your early-access allowance refreshes daily in Asia/Kolkata."
     >
       <div className={styles.routeGrid}>
         <StatusCard
@@ -22,7 +22,7 @@ export default async function CreditsPage() {
           value={
             summary?.availableCredits?.toLocaleString("en-IN") ?? "Not active"
           }
-          copy="No paid balance is claimed before the subscription and ledger phase."
+          copy="Credits remaining in the current early-access day."
         />
         <StatusCard
           icon={<Activity aria-hidden="true" size={21} />}

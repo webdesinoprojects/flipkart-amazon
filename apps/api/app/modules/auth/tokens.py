@@ -28,6 +28,16 @@ def generate_token() -> str:
     return secrets.token_urlsafe(TOKEN_BYTES)
 
 
+def generate_verification_code() -> str:
+    """Return a zero-padded six-digit code suitable for cross-device entry."""
+    return f"{secrets.randbelow(1_000_000):06d}"
+
+
+def verification_code_digest(email: str, code: str, *, secret: str) -> str:
+    """Bind a short verification code to its canonical email before hashing."""
+    return digest_token(f"email-verification-code:{email}:{code}", secret=secret)
+
+
 def digest_token(token: str, *, secret: str) -> str:
     """Return the hex keyed digest stored in PostgreSQL for ``token``."""
     return hmac.new(

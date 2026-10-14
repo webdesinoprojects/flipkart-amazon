@@ -11,6 +11,13 @@ def confirm(auth_env, token):
     return auth_env.client.post("/api/v1/auth/verify-email/confirm", json={"token": token})
 
 
+def confirm_code(auth_env, email=EMAIL, code=None):
+    return auth_env.client.post(
+        "/api/v1/auth/verify-email/confirm",
+        json={"email": email, "code": code or auth_env.email.last_code()},
+    )
+
+
 def test_registration_already_sends_a_usable_verification_link(auth_env):
     auth_env.register(EMAIL)
     response = confirm(auth_env, auth_env.email.last_token())
@@ -18,6 +25,19 @@ def test_registration_already_sends_a_usable_verification_link(auth_env):
     body = response.json()
     assert body["status"] == "verified"
     assert body["user"]["emailVerified"] is True
+
+
+def test_registration_sends_a_cross_device_code(auth_env):
+    auth_env.register(EMAIL)
+    response = confirm_code(auth_env)
+    assert response.status_code == 200
+    assert response.json()["user"]["emailVerified"] is True
+
+
+def test_code_is_bound_to_the_submitted_email(auth_env):
+    auth_env.register(EMAIL)
+    response = confirm_code(auth_env, email="different@example.com")
+    assert response.status_code == 400
 
 
 def test_a_resend_produces_a_new_working_link(auth_env):

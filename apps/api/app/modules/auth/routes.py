@@ -42,8 +42,7 @@ from .service import IssuedSession, RequestContext
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
 REGISTRATION_MESSAGE = (
-    "If that address can be used, we have sent a verification link. "
-    "Sign in once your address is confirmed."
+    "If that address can be used, we sent a six-digit verification code and secure link."
 )
 REGISTRATION_MESSAGE_NO_EMAIL = (
     "Your request was accepted, but email delivery is not configured in this "

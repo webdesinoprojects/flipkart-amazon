@@ -7,19 +7,19 @@ test("publishes complete search, social, app, and LLM discovery metadata", async
   await page.goto("/");
 
   await expect(page).toHaveTitle(
-    "Marketplace Shipping Label Normalizer | Flipkart, Amazon & Meesho",
+    "SellerLabel | Crop Shipping Labels for Easy Printing",
   );
   await expect(page.locator('meta[name="description"]')).toHaveAttribute(
     "content",
-    /Flipkart, Amazon, and Meesho shipping PDFs/,
+    /Flipkart, Amazon and Meesho shipping labels/,
   );
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",
-    "https://marketplace-label-normalizer.onrender.com",
+    "https://sellerlabel.in",
   );
   await expect(page.locator('meta[property="og:title"]')).toHaveAttribute(
     "content",
-    /Marketplace Shipping Label Normalizer/,
+    /SellerLabel/,
   );
   await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute(
     "content",
@@ -35,8 +35,10 @@ test("publishes complete search, social, app, and LLM discovery metadata", async
   );
 
   const structuredData = JSON.parse(
-    (await page.locator('script[type="application/ld+json"]').textContent()) ??
-      "{}",
+    (await page
+      .locator('script[type="application/ld+json"]')
+      .first()
+      .textContent()) ?? "{}",
   ) as { "@graph"?: Array<{ "@type"?: string }> };
   expect(structuredData["@graph"]?.map((entry) => entry["@type"])).toEqual([
     "WebSite",
@@ -45,10 +47,10 @@ test("publishes complete search, social, app, and LLM discovery metadata", async
 
   const expectedRoutes = [
     ["/robots.txt", /Sitemap: .*\/sitemap\.xml/],
-    ["/sitemap.xml", /marketplace-label-normalizer\.onrender\.com/],
-    ["/manifest.webmanifest", /Marketplace Shipping Label Normalizer/],
-    ["/llms.txt", /local-first web application/],
-    ["/llms-full.txt", /Page size: exactly 100 x 150 mm/],
+    ["/sitemap.xml", /sellerlabel\.in/],
+    ["/manifest.webmanifest", /SellerLabel/],
+    ["/llms.txt", /helps ecommerce sellers/],
+    ["/llms-full.txt", /four labels per A4 sheet/],
   ] as const;
 
   for (const [path, expectedContent] of expectedRoutes) {

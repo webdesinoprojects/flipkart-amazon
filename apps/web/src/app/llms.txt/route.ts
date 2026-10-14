@@ -4,14 +4,16 @@ const content = `# ${SITE_NAME}
 
 > ${SITE_DESCRIPTION}
 
-${SITE_NAME} is a local-first web application for ecommerce sellers who need to prepare marketplace shipping labels for thermal printing. The deterministic browser workflow is primary: selected PDF files remain on the user's device during normal processing.
+${SITE_NAME} helps ecommerce sellers crop marketplace shipping labels for thermal and A4 printing. Selected source PDF files remain on the user's device during normal processing.
 
 ## Primary links
 
-- [Application](${absoluteUrl("/")}): Upload and normalize marketplace shipping PDFs.
+- [Application](${absoluteUrl("/")}): Crop marketplace shipping PDFs.
+- [Flipkart label crop](${absoluteUrl("/flipkart-label-crop")}): Keep the E-Kart label and remove the invoice.
+- [Amazon label without invoice](${absoluteUrl("/amazon-label-without-invoice")}): Separate package labels from invoice pages.
+- [Meesho label crop](${absoluteUrl("/meesho-label-crop")}): Trim excess space around courier labels.
 - [Sitemap](${absoluteUrl("/sitemap.xml")}): Canonical indexable URLs.
 - [Full product context](${absoluteUrl("/llms-full.txt")}): Detailed capabilities, workflow, and limitations.
-- [Source repository](https://github.com/webdesinoprojects/flipkart-amazon): Open-source project code and documentation.
 
 ## Supported workflows
 
@@ -19,13 +21,13 @@ ${SITE_NAME} is a local-first web application for ecommerce sellers who need to 
 - Amazon shipping-label page retention with seller-only invoice exclusion.
 - Meesho meaningful-content detection and excess-whitespace trimming.
 - Mixed Flipkart, Amazon, and Meesho batches.
-- PDF-native normalization to one 100 x 150 mm portrait shipment label per output page.
+- Sharp 100 x 150 mm label output and A4 four-up printing.
 - Barcode and QR evidence checks, confidence scoring, and manual crop review.
 - Combined PRINT_READY_LABELS.pdf preview, download, and browser print flow.
 
 ## Privacy
 
-Normal PDF processing happens locally in the browser. Original marketplace PDFs are not uploaded by the standard workflow. For signed-in users, only the generated combined output PDF and aggregate non-PII counts are saved automatically to private history. Optional server and AI fallback architecture is separate and should only be used when deterministic processing is uncertain and explicitly enabled.
+Normal PDF processing happens locally in the browser. Original marketplace PDFs are not uploaded by the standard workflow. For signed-in users, only the generated combined output PDF and aggregate non-PII counts are saved automatically to private history.
 `;
 
 export function GET(): Response {
