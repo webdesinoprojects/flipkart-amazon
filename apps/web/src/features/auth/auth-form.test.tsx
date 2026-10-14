@@ -36,7 +36,7 @@ describe("AuthForm", () => {
       screen.getByRole("textbox", { name: "EMAIL ADDRESS" }),
       "seller@example.com",
     );
-    await user.type(screen.getByLabelText(/^PASSWORD/), "long-passphrase");
+    await user.type(screen.getByLabelText(/^PASSWORD/), "abcd");
     await user.click(screen.getByRole("button", { name: "CREATE ACCOUNT" }));
 
     expect(pushMock).toHaveBeenCalledWith(

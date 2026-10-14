@@ -88,11 +88,11 @@ export function AuthForm({
               mode === "login" ? "current-password" : "new-password"
             }
             required
-            minLength={10}
+            minLength={4}
             maxLength={1024}
           />
           {mode === "register" && (
-            <small>10+ characters. Long passphrases are welcome.</small>
+            <small>4 characters minimum. A longer passphrase is safer.</small>
           )}
         </label>
       )}

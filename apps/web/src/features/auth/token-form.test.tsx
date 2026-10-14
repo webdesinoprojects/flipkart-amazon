@@ -13,6 +13,14 @@ vi.mock("./browser-api", async (importOriginal) => {
 });
 
 describe("TokenForm", () => {
+  it("allows a four-character password on the reset form", () => {
+    render(<TokenForm mode="reset" token="opaque-token" />);
+    expect(screen.getByLabelText("NEW PASSWORD")).toHaveAttribute(
+      "minlength",
+      "4",
+    );
+  });
+
   it("confirms a six-digit code against the registration email", async () => {
     verifyEmailMock.mockResolvedValueOnce({ status: "verified" });
     const user = userEvent.setup();

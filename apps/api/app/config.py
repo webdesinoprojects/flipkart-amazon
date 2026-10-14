@@ -56,7 +56,7 @@ class Settings(BaseSettings):
     auth_max_sessions_per_user: int = Field(default=20, ge=1, le=200)
 
     # --- Password policy ----------------------------------------------------
-    auth_password_min_length: int = Field(default=10, ge=8, le=64)
+    auth_password_min_length: int = Field(default=4, ge=4, le=64)
     auth_password_max_bytes: int = Field(default=1024, ge=72, le=4096)
     auth_argon2_time_cost: int = Field(default=3, ge=1, le=10)
     auth_argon2_memory_kib: int = Field(default=65536, ge=8192, le=1048576)

@@ -93,10 +93,18 @@ def test_a_weak_new_password_is_rejected_and_the_token_survives(auth_env):
     auth_env.register(EMAIL)
     forgot(auth_env)
     token = auth_env.email.last_token()
-    response = reset(auth_env, token, "short")
+    response = reset(auth_env, token, "abc")
     assert response.status_code == 422
     assert "password" in response.json()["error"]["fields"]
     assert reset(auth_env, token).status_code == 200, "the link is still usable"
+
+
+def test_a_four_character_password_can_be_set_with_a_reset_link(auth_env):
+    auth_env.register(EMAIL)
+    forgot(auth_env)
+    token = auth_env.email.last_token()
+    assert reset(auth_env, token, "abcd").status_code == 200
+    assert auth_env.login(EMAIL, "abcd").status_code == 200
 
 
 def test_a_reset_revokes_every_existing_session(auth_env):

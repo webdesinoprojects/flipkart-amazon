@@ -94,7 +94,7 @@ export function TokenForm({
             name="password"
             type="password"
             autoComplete="new-password"
-            minLength={10}
+            minLength={4}
             required
           />
         </label>

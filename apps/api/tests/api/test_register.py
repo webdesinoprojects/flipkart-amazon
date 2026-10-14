@@ -99,10 +99,16 @@ def test_an_invalid_address_returns_a_field_error(auth_env):
 
 
 def test_a_short_password_returns_a_field_error_and_no_account(auth_env):
-    response = auth_env.register(EMAIL, "short")
+    response = auth_env.register(EMAIL, "abc")
     assert response.status_code == 422
     assert "password" in response.json()["error"]["fields"]
     assert user_count(auth_env) == 0
+
+
+def test_a_four_character_password_can_create_an_account(auth_env):
+    response = auth_env.register(EMAIL, "abcd")
+    assert response.status_code == 202
+    assert auth_env.login(EMAIL, "abcd").status_code == 200
 
 
 def test_an_oversized_password_is_rejected_without_truncation(auth_env):

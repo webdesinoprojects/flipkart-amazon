@@ -13,7 +13,7 @@ CHEAP = {"time_cost": 1, "memory_kib": 8192, "parallelism": 1}
 
 def cheap_service(**overrides):
     return password_service_from_parameters(
-        **{**CHEAP, "min_length": 10, "max_bytes": 1024, **overrides}
+        **{**CHEAP, "min_length": 4, "max_bytes": 1024, **overrides}
     )
 
 
@@ -25,6 +25,7 @@ def test_product_defaults_exceed_the_owasp_argon2id_minimum():
     assert time_cost >= 2
     assert parallelism >= 1
     assert (time_cost, memory_kib, parallelism) == (3, 65536, 2)
+    assert settings.auth_password_min_length == 4
 
 
 def test_hash_is_argon2id_and_salted_per_password():
@@ -57,7 +58,7 @@ def test_long_unicode_passphrases_are_accepted():
 
 
 def test_maximum_byte_length_is_enforced_without_truncation():
-    policy = PasswordPolicy(min_length=10, max_bytes=72)
+    policy = PasswordPolicy(min_length=4, max_bytes=72)
     # Four-byte characters: 20 of them exceed 72 bytes while being 20 characters.
     too_long = "🔐" * 20
     assert len(too_long) == 20
@@ -75,21 +76,21 @@ def test_a_password_over_the_limit_is_not_silently_shortened():
 
 
 def test_too_short_is_rejected_with_a_safe_message():
-    policy = PasswordPolicy(min_length=10, max_bytes=1024)
+    policy = PasswordPolicy(min_length=4, max_bytes=1024)
     with pytest.raises(PasswordPolicyError) as error:
-        policy.validate("short")
-    assert "at least 10" in error.value.message
-    assert "short" not in error.value.message, "the message must not echo the password"
+        policy.validate("abc")
+    assert "at least 4" in error.value.message
+    assert "abc" not in error.value.message, "the message must not echo the password"
 
 
 def test_no_composition_rules_are_imposed():
-    """A long lowercase passphrase must be acceptable."""
-    policy = PasswordPolicy(min_length=10, max_bytes=1024)
-    assert policy.validate("all lowercase words no symbols")
+    """A four-character lowercase password must be acceptable."""
+    policy = PasswordPolicy(min_length=4, max_bytes=1024)
+    assert policy.validate("abcd")
 
 
 def test_null_bytes_are_rejected():
-    policy = PasswordPolicy(min_length=10, max_bytes=1024)
+    policy = PasswordPolicy(min_length=4, max_bytes=1024)
     with pytest.raises(PasswordPolicyError):
         policy.validate("abcdefghij\x00klmno")
 
@@ -97,7 +98,7 @@ def test_null_bytes_are_rejected():
 def test_rehash_is_requested_when_parameters_increase():
     weak = cheap_service(time_cost=1)
     strong = password_service_from_parameters(
-        time_cost=3, memory_kib=16384, parallelism=1, min_length=10, max_bytes=1024
+        time_cost=3, memory_kib=16384, parallelism=1, min_length=4, max_bytes=1024
     )
     weak_hash = weak.hash("correct horse battery staple")
     assert strong.needs_rehash(weak_hash) is True
