@@ -49,9 +49,9 @@
 }
 
 .sourceSheet {
-  top: 15%;
-  left: 7%;
-  transform: rotate(-4deg);
+  top: 19%;
+  left: 49%;
+  transform: translateX(-50%);
   animation: sourceCycle 8s cubic-bezier(0.22, 1, 0.36, 1) infinite;
 }
 
@@ -74,17 +74,24 @@
   0%,
   10% {
     opacity: 0;
-    transform: translate3d(-36px, 8px, 0) rotate(-7deg) scale(0.94);
+    left: 56%;
+    transform: translate3d(-50%, 8px, 0) rotate(-4deg) scale(0.94);
   }
-  18%,
+  18% {
+    opacity: 1;
+    left: 56%;
+    transform: translate3d(-50%, 0, 0) rotate(-3deg) scale(1);
+  }
   52% {
     opacity: 1;
-    transform: translate3d(0, 0, 0) rotate(-4deg) scale(1);
+    left: 49%;
+    transform: translate3d(-50%, 0, 0) rotate(0) scale(1);
   }
   64%,
   100% {
     opacity: 0;
-    transform: translate3d(46px, 12px, 0) rotate(-1deg) scale(0.9);
+    left: 49%;
+    transform: translate3d(-50%, 12px, 0) rotate(0) scale(0.9);
   }
 }
 
@@ -115,10 +122,6 @@
 @media (max-width: 560px) {
   .visual {
     aspect-ratio: 4 / 3;
-  }
-
-  .sourceSheet {
-    left: 3%;
   }
 
   .outputSheet {
