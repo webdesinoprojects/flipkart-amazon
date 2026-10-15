@@ -31,6 +31,12 @@ def test_the_nearer_of_idle_and_absolute_expiry_wins():
     assert record.expires_at() == record.absolute_expires_at
 
 
+def test_default_session_lasts_up_to_thirty_days_across_browser_restarts():
+    settings = Settings(environment="test", _env_file=None)
+    assert settings.auth_session_idle_seconds == 30 * 86400
+    assert settings.auth_session_absolute_seconds == 30 * 86400
+
+
 def test_an_idle_session_is_not_live_even_within_the_absolute_window():
     record = session_at(idle_in=-1, absolute_in=86400)
     assert record.is_live(utc_now()) is False

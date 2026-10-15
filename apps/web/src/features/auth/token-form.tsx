@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { authApi, AuthApiError } from "./browser-api";
+import { PasswordInput } from "./password-input";
 import styles from "./auth.module.css";
 
 export function TokenForm({
@@ -20,6 +21,7 @@ export function TokenForm({
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const formElement = event.currentTarget;
     setPending(true);
     setError("");
     try {
@@ -27,7 +29,7 @@ export function TokenForm({
         if (mode === "reset")
           throw new AuthApiError("This link is incomplete or invalid.", 400);
       if (mode === "verify") {
-        const form = new FormData(event.currentTarget);
+        const form = new FormData(formElement);
         const submittedEmail = String(form.get("email") ?? email).trim();
         const code = String(form.get("code") ?? "").trim();
         await authApi.verifyEmail(
@@ -36,13 +38,13 @@ export function TokenForm({
         setMessage("Email verified. You can now sign in.");
       } else {
         const password = String(
-          new FormData(event.currentTarget).get("password") ?? "",
+          new FormData(formElement).get("password") ?? "",
         );
         await authApi.resetPassword(token, password);
         setMessage(
           "Password updated. Every previous session has been signed out.",
         );
-        event.currentTarget.reset();
+        formElement.reset();
       }
     } catch (caught) {
       setError(
@@ -90,13 +92,7 @@ export function TokenForm({
       {mode === "reset" && (
         <label>
           <span>NEW PASSWORD</span>
-          <input
-            name="password"
-            type="password"
-            autoComplete="new-password"
-            minLength={4}
-            required
-          />
+          <PasswordInput autoComplete="new-password" />
         </label>
       )}
       <button type="submit" disabled={pending || Boolean(message)}>

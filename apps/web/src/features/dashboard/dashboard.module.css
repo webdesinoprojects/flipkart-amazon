@@ -567,6 +567,55 @@
   cursor: not-allowed;
 }
 
+.subscribeAction {
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  padding: 0 22px;
+  border: 1px solid #167647;
+  border-radius: 999px;
+  background: #167647;
+  color: #ffffff;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  box-shadow: 0 6px 20px #16764729;
+}
+
+.subscribeAction:hover:not(:disabled),
+.subscribeAction:focus-visible:not(:disabled) {
+  background: #0f5c36;
+  border-color: #0f5c36;
+  transform: translateY(-1px);
+}
+
+.subscribeAction:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.shell[data-theme="dark"] .subscribeAction {
+  border-color: #3af18a;
+  background: #3af18a;
+  color: #082013;
+  box-shadow: 0 6px 22px #25e97829;
+}
+
+.shell[data-theme="dark"] .subscribeAction:hover:not(:disabled),
+.shell[data-theme="dark"] .subscribeAction:focus-visible:not(:disabled) {
+  border-color: #8bfcb5;
+  background: #8bfcb5;
+}
+
+.shell[data-theme="dark"] .subscribeAction:disabled {
+  box-shadow: none;
+}
+
 .overviewGrid {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
@@ -1004,16 +1053,25 @@
 }
 
 .filterTrigger {
-  min-height: 36px;
+  min-height: 42px;
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 0 10px;
-  border: 1px solid var(--dashboard-line);
+  padding: 0 13px;
+  border: 1px solid
+    color-mix(in srgb, var(--dashboard-text) 24%, var(--dashboard-line));
   border-radius: 9px;
   background: var(--dashboard-card);
   color: var(--dashboard-text);
-  font-size: 9px;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.filterTrigger:hover,
+.filterTrigger:focus-visible,
+.filterTrigger[data-state="open"] {
+  border-color: var(--dashboard-text);
+  background: var(--dashboard-card-soft);
 }
 
 .filterTrigger > span {
@@ -1026,8 +1084,8 @@
 
 .filterMenu {
   z-index: 90;
-  min-width: 190px;
-  padding: 7px;
+  min-width: max(220px, var(--radix-dropdown-menu-trigger-width, 220px));
+  padding: 8px;
   border: 1px solid #30332d;
   border-radius: 11px;
   background: #151613;
@@ -1045,17 +1103,24 @@
 }
 
 .filterMenuItem {
-  min-height: 36px;
+  min-height: 42px;
   display: grid;
-  grid-template-columns: 17px 1fr;
+  grid-template-columns: 18px minmax(0, 1fr);
   align-items: center;
-  gap: 5px;
-  padding: 0 9px;
+  gap: 9px;
+  padding: 0 10px;
   border-radius: 7px;
   color: #c8cbc3;
   cursor: pointer;
-  font-size: 9px;
+  font-size: 11px;
   outline: none;
+  white-space: nowrap;
+}
+
+.filterMenuIndicator {
+  display: grid;
+  width: 18px;
+  place-items: center;
 }
 
 .filterMenuItem[data-highlighted] {

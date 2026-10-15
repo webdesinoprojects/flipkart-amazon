@@ -206,7 +206,7 @@ export function SubscriptionPlans() {
                 ))}
               </div>
               <button
-                className={styles.secondaryAction}
+                className={styles.subscribeAction}
                 type="button"
                 disabled={
                   !status?.available ||

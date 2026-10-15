@@ -23,6 +23,18 @@ vi.mock("./browser-api", async (importOriginal) => {
 });
 
 describe("AuthForm", () => {
+  it.each(["login", "register"] as const)(
+    "offers password visibility on %s",
+    async (mode) => {
+      const user = userEvent.setup();
+      render(<AuthForm mode={mode} />);
+      const password = screen.getByLabelText(/^PASSWORD/);
+      expect(password).toHaveAttribute("type", "password");
+      await user.click(screen.getByRole("button", { name: "Show password" }));
+      expect(password).toHaveAttribute("type", "text");
+    },
+  );
+
   it("sends a delivered registration to the cross-device OTP screen", async () => {
     registerMock.mockResolvedValueOnce({
       status: "accepted",

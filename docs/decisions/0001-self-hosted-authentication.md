@@ -189,13 +189,13 @@ no permissive `Access-Control-Allow-Origin` with credentials is configured.
 
 ### Lifetimes
 
-| Setting                      | Default                                                    | Reason                                                                                                   |
-| ---------------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| Idle expiry                  | 12 hours                                                   | A seller's working day; `last_seen_at` is refreshed at most once per minute to bound write amplification |
-| Absolute expiry              | 30 days                                                    | Caps the damage of a stolen cookie regardless of activity                                                |
-| Email-verification token TTL | 24 hours                                                   | Long enough for delayed mail, short enough to limit replay                                               |
-| Password-reset token TTL     | 30 minutes                                                 | Reset tokens are the highest-value one-time secret                                                       |
-| Rotation                     | on login, on password reset, on role change, on suspension | Defeats session fixation and prevents a pre-existing session from retaining stale privileges             |
+| Setting                      | Default                                                    | Reason                                                                                                                           |
+| ---------------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Idle expiry                  | 30 days                                                    | Keep sellers signed in across browser restarts; `last_seen_at` is refreshed at most once per minute to bound write amplification |
+| Absolute expiry              | 30 days                                                    | Caps the damage of a stolen cookie regardless of activity                                                                        |
+| Email-verification token TTL | 24 hours                                                   | Long enough for delayed mail, short enough to limit replay                                                                       |
+| Password-reset token TTL     | 30 minutes                                                 | Reset tokens are the highest-value one-time secret                                                                               |
+| Rotation                     | on login, on password reset, on role change, on suspension | Defeats session fixation and prevents a pre-existing session from retaining stale privileges                                     |
 
 One-time tokens are 256-bit random values stored only as keyed digests, are
 single-use through an atomic conditional `UPDATE`, and are invalidated in bulk

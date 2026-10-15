@@ -51,7 +51,7 @@ class Settings(BaseSettings):
     auth_secret: str = DEVELOPMENT_AUTH_SECRET
     auth_cookie_prefix: str = Field(default="ln", pattern=r"^[A-Za-z0-9_-]{1,16}$")
     auth_cookie_secure: bool = False
-    auth_session_idle_seconds: int = Field(default=12 * 3600, ge=300)
+    auth_session_idle_seconds: int = Field(default=30 * 86400, ge=300)
     auth_session_absolute_seconds: int = Field(default=30 * 86400, ge=3600)
     auth_session_touch_seconds: int = Field(default=60, ge=1)
     auth_max_sessions_per_user: int = Field(default=20, ge=1, le=200)

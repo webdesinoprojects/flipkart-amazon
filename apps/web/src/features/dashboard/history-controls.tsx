@@ -195,10 +195,12 @@ function FilterMenu({
                 key={optionValue}
                 value={optionValue}
               >
-                <DropdownMenu.ItemIndicator>
-                  <Check aria-hidden="true" size={13} />
-                </DropdownMenu.ItemIndicator>
-                {optionLabel}
+                <span className={styles.filterMenuIndicator}>
+                  <DropdownMenu.ItemIndicator>
+                    <Check aria-hidden="true" size={14} />
+                  </DropdownMenu.ItemIndicator>
+                </span>
+                <span>{optionLabel}</span>
               </DropdownMenu.RadioItem>
             ))}
           </DropdownMenu.RadioGroup>

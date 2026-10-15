@@ -5,6 +5,7 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authApi, AuthApiError } from "./browser-api";
 import { safeReturnTarget } from "./return-target";
+import { PasswordInput } from "./password-input";
 import styles from "./auth.module.css";
 
 type Mode = "login" | "register" | "forgot";
@@ -81,15 +82,10 @@ export function AuthForm({
       {mode !== "forgot" && (
         <label>
           <span>PASSWORD</span>
-          <input
-            name="password"
-            type="password"
+          <PasswordInput
             autoComplete={
               mode === "login" ? "current-password" : "new-password"
             }
-            required
-            minLength={4}
-            maxLength={1024}
           />
           {mode === "register" && (
             <small>4 characters minimum. A longer passphrase is safer.</small>

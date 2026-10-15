@@ -5,18 +5,28 @@ import * as Dialog from "@radix-ui/react-dialog";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import * as Switch from "@radix-ui/react-switch";
 import {
+  Barcode,
+  Boxes,
   ChevronDown,
+  FileStack,
+  Files,
+  Layers3,
   LogOut,
   Menu,
   Moon,
+  PackageCheck,
   PanelLeftClose,
   PanelLeftOpen,
+  Printer,
+  ScanLine,
   Sun,
+  Tags,
+  Truck,
   X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useState, useSyncExternalStore, type ReactNode } from "react";
 import type { AuthUser } from "@/features/auth/contracts";
 import { authApi } from "@/features/auth/browser-api";
 import { Logo } from "@/features/marketing/logo";
@@ -28,6 +38,23 @@ import {
   type DashboardNavigationItem,
 } from "./navigation";
 import styles from "./dashboard.module.css";
+
+const workspaceIcons = [
+  Barcode,
+  Boxes,
+  FileStack,
+  Files,
+  Layers3,
+  PackageCheck,
+  Printer,
+  ScanLine,
+  Tags,
+  Truck,
+] as const;
+const randomWorkspaceIcon = Math.floor(Math.random() * workspaceIcons.length);
+const subscribeToWorkspaceIcon = () => () => undefined;
+const getWorkspaceIcon = () => randomWorkspaceIcon;
+const getServerWorkspaceIcon = () => 0;
 
 export function DashboardShell({
   user,
@@ -155,6 +182,12 @@ function SidebarContent({
   readonly onNavigate: () => void;
   readonly onToggleCollapse?: () => void;
 }) {
+  const workspaceIcon = useSyncExternalStore(
+    subscribeToWorkspaceIcon,
+    getWorkspaceIcon,
+    getServerWorkspaceIcon,
+  );
+  const WorkspaceIcon = workspaceIcons[workspaceIcon] ?? Barcode;
   return (
     <div className={styles.sidebarInner}>
       <div className={styles.sidebarBrand}>
@@ -179,7 +212,9 @@ function SidebarContent({
 
       <div className={styles.workspaceIdentity}>
         <Avatar.Root className={styles.workspaceAvatar}>
-          <Avatar.Fallback>{initials(user.email)}</Avatar.Fallback>
+          <Avatar.Fallback>
+            <WorkspaceIcon aria-hidden="true" size={20} strokeWidth={1.8} />
+          </Avatar.Fallback>
         </Avatar.Root>
         <div>
           <strong>{workspaceName(user.email)}</strong>

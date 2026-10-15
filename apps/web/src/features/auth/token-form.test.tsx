@@ -2,14 +2,26 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TokenForm } from "./token-form";
 
-const { verifyEmailMock } = vi.hoisted(() => ({ verifyEmailMock: vi.fn() }));
+const { verifyEmailMock, resetPasswordMock } = vi.hoisted(() => ({
+  verifyEmailMock: vi.fn(),
+  resetPasswordMock: vi.fn(),
+}));
 
 vi.mock("./browser-api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./browser-api")>();
   return {
     ...actual,
-    authApi: { ...actual.authApi, verifyEmail: verifyEmailMock },
+    authApi: {
+      ...actual.authApi,
+      verifyEmail: verifyEmailMock,
+      resetPassword: resetPasswordMock,
+    },
   };
+});
+
+beforeEach(() => {
+  verifyEmailMock.mockClear();
+  resetPasswordMock.mockClear();
 });
 
 describe("TokenForm", () => {
@@ -19,6 +31,35 @@ describe("TokenForm", () => {
       "minlength",
       "4",
     );
+  });
+
+  it("shows reset success and clears the form after the request resolves", async () => {
+    resetPasswordMock.mockResolvedValueOnce({ status: "password_updated" });
+    const user = userEvent.setup();
+    render(<TokenForm mode="reset" token="opaque-token" />);
+
+    await user.type(screen.getByLabelText("NEW PASSWORD"), "abcd");
+    await user.click(screen.getByRole("button", { name: "UPDATE PASSWORD" }));
+
+    expect(resetPasswordMock).toHaveBeenCalledWith("opaque-token", "abcd");
+    expect(await screen.findByText(/Password updated/i)).toBeInTheDocument();
+    expect(screen.getByLabelText("NEW PASSWORD")).toHaveValue("");
+    expect(
+      screen.queryByText(/service is unavailable/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it("reveals and hides the new password without submitting", async () => {
+    const user = userEvent.setup();
+    render(<TokenForm mode="reset" token="opaque-token" />);
+
+    const password = screen.getByLabelText("NEW PASSWORD");
+    expect(password).toHaveAttribute("type", "password");
+    await user.click(screen.getByRole("button", { name: "Show password" }));
+    expect(password).toHaveAttribute("type", "text");
+    await user.click(screen.getByRole("button", { name: "Hide password" }));
+    expect(password).toHaveAttribute("type", "password");
+    expect(resetPasswordMock).not.toHaveBeenCalled();
   });
 
   it("confirms a six-digit code against the registration email", async () => {

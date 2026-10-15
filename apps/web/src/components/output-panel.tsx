@@ -101,6 +101,7 @@ export function OutputPanel({ batch }: { readonly batch: Batch }) {
             PREVIEW
           </button>
           <button
+            className="output-action--primary"
             disabled={exportDisabled}
             onClick={() => artifact && downloadCombinedPdf(artifact)}
             type="button"
@@ -108,6 +109,7 @@ export function OutputPanel({ batch }: { readonly batch: Batch }) {
             DOWNLOAD PDF
           </button>
           <button
+            className="output-action--secondary"
             disabled={exportDisabled}
             onClick={() => {
               const opened = artifact ? printCombinedPdf(artifact) : false;
