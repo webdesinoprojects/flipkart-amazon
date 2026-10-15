@@ -1,6 +1,7 @@
-/** Published allowances; only early access is active until checkout launches. */
+/** Published allowances. Checkout availability comes from the API. */
 export const plans = [
   {
+    code: "free",
     name: "Early access",
     monthlyPriceInr: 0,
     dailyCredits: 100,
@@ -8,6 +9,7 @@ export const plans = [
     available: true,
   },
   {
+    code: "starter",
     name: "Starter",
     monthlyPriceInr: 99,
     dailyCredits: 300,
@@ -15,6 +17,7 @@ export const plans = [
     available: false,
   },
   {
+    code: "growth",
     name: "Growth",
     monthlyPriceInr: 199,
     dailyCredits: 700,
@@ -22,6 +25,7 @@ export const plans = [
     available: false,
   },
   {
+    code: "scale",
     name: "Scale",
     monthlyPriceInr: 299,
     dailyCredits: 1200,

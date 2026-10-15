@@ -31,5 +31,8 @@ celery_app.conf.update(
             "task": "auth.cleanup_expired",
             "schedule": 3600.0,
         },
+        "billing-process-events": {"task": "billing.process_events", "schedule": 20.0},
+        "billing-reconcile": {"task": "billing.reconcile", "schedule": 300.0},
+        "billing-cleanup-events": {"task": "billing.cleanup_events", "schedule": 86400.0},
     },
 )

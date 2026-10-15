@@ -26,6 +26,8 @@ from .modules.auth.email_address import InvalidEmailError, normalize_email
 from .modules.auth.models import UserRecord
 from .modules.auth.passwords import PasswordPolicyError, build_password_service
 from .modules.auth.repository import AuthRepository
+from .modules.billing.gateway import get_gateway
+from .modules.billing.processing import reconcile_one_subscription
 from .platform.clock import utc_now
 
 EXIT_OK = 0
@@ -185,6 +187,12 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Also set a new password and revoke every existing session.",
     )
+    billing = commands.add_parser(
+        "reconcile-billing",
+        help="Verify and backfill one local subscription from Razorpay invoices.",
+        allow_abbrev=False,
+    )
+    billing.add_argument("--subscription-id", required=True, help="Razorpay sub_ identifier.")
     return parser
 
 
@@ -197,6 +205,23 @@ def main(argv: list[str] | None = None) -> int:
             assume_yes=arguments.yes,
             reset_password=arguments.reset_password,
         )
+    if arguments.command == "reconcile-billing":
+        if not arguments.subscription_id.startswith("sub_"):
+            print("error: expected a Razorpay sub_ identifier", file=sys.stderr)
+            return EXIT_USAGE
+        settings = get_settings()
+        if not settings.razorpay_api_configured:
+            print("error: Razorpay is not configured", file=sys.stderr)
+            return EXIT_USAGE
+        try:
+            report = reconcile_one_subscription(
+                SessionLocal, get_gateway(settings), arguments.subscription_id
+            )
+        except Exception as error:  # noqa: BLE001 - operator sees safe type, no provider body
+            print(f"error: reconciliation failed ({type(error).__name__})", file=sys.stderr)
+            return EXIT_ABORTED
+        print("Reconciled: " + ", ".join(f"{key}={value}" for key, value in report.items()))
+        return EXIT_OK if report["flagged"] == 0 else EXIT_ABORTED
     return EXIT_USAGE
 
 

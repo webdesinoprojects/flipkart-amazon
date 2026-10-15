@@ -558,6 +558,13 @@
   border-color: var(--dashboard-line);
   background: var(--dashboard-card);
   color: var(--dashboard-text);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.secondaryAction:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .overviewGrid {

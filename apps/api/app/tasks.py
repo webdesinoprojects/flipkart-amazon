@@ -8,6 +8,12 @@ from .database import SessionLocal
 from .events import append_event
 from .models import BatchRecord, DocumentRecord
 from .modules.auth.cleanup import purge_expired_auth_rows
+from .modules.billing.gateway import get_gateway
+from .modules.billing.processing import (
+    process_due_events,
+    prune_processed_events,
+    reconcile_due_subscriptions,
+)
 from .pdf_inspection import inspect_pdf
 from .providers.storage import build_storage
 
@@ -131,3 +137,24 @@ def cleanup_expired() -> dict[str, int]:
             session.delete(batch)
         session.commit()
     return {"deleted": deleted}
+
+
+@celery_app.task(name="billing.process_events", soft_time_limit=240, time_limit=300)
+def billing_process_events() -> dict[str, int]:
+    settings = get_settings()
+    if not settings.razorpay_api_configured:
+        return {"done": 0, "retry": 0, "ignored": 0, "skipped": 0}
+    return process_due_events(SessionLocal, get_gateway(settings), limit=20)
+
+
+@celery_app.task(name="billing.reconcile", soft_time_limit=540, time_limit=600)
+def billing_reconcile() -> dict[str, int]:
+    settings = get_settings()
+    if not settings.razorpay_api_configured:
+        return {"checked": 0, "recovered": 0, "refunded": 0, "flagged": 0}
+    return reconcile_due_subscriptions(SessionLocal, get_gateway(settings), limit=10)
+
+
+@celery_app.task(name="billing.cleanup_events")
+def billing_cleanup_events() -> dict[str, int]:
+    return {"removed": prune_processed_events(SessionLocal)}

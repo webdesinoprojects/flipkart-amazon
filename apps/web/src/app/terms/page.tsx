@@ -50,6 +50,18 @@ export default function TermsPage() {
         </p>
       </section>
       <section>
+        <h2>Paid subscriptions</h2>
+        <p>
+          When paid checkout is available, Starter (₹99), Growth (₹199) and
+          Scale (₹299) renew monthly until cancelled, for up to 120 billing
+          cycles. Their daily allowances are 300, 700 and 1,200 labels
+          respectively. Credits reset daily and do not roll over. A paid
+          allowance begins only after a confirmed successful charge and lasts
+          through its paid period. You can stop future renewal from your
+          subscription page; see the Cancellation and Refund Policy.
+        </p>
+      </section>
+      <section>
         <h2>Availability and changes</h2>
         <p>
           We may maintain, improve or discontinue features and may suspend an

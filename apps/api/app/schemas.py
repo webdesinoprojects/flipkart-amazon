@@ -65,3 +65,5 @@ class ProviderStatus(BaseModel):
     email_available: bool
     """False is normal locally; it never prevents boot, and the UI says so."""
     rate_limit: Literal["valkey", "degraded", "disabled"]
+    billing_inbox: Literal["clear", "stale", "unavailable"]
+    billing_oldest_unresolved_seconds: int | None

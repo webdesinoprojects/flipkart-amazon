@@ -30,12 +30,14 @@ class JsonBodyLimitMiddleware:
 
         request = Request(scope)
         content_type = (request.headers.get("content-type") or "").split(";")[0].strip()
-        if content_type and content_type != JSON_CONTENT_TYPE:
+        is_billing_webhook = scope.get("path") == "/api/v1/billing/webhook"
+        if not is_billing_webhook and content_type and content_type != JSON_CONTENT_TYPE:
             await self.app(scope, receive, send)
             return
 
+        limit = 128 * 1024 if is_billing_webhook else self.max_bytes
         declared = request.headers.get("content-length")
-        if declared and declared.isdigit() and int(declared) > self.max_bytes:
+        if declared and declared.isdigit() and int(declared) > limit:
             await self._reject(scope, receive, send)
             return
 
@@ -48,7 +50,7 @@ class JsonBodyLimitMiddleware:
                 break
             chunk = message.get("body", b"")
             received += len(chunk)
-            if received > self.max_bytes:
+            if received > limit:
                 await self._reject(scope, receive, send)
                 return
             chunks.append(chunk)

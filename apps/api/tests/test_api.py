@@ -1,6 +1,9 @@
+from datetime import UTC, datetime, timedelta
 from io import BytesIO
 
 from pypdf import PdfWriter
+
+from app.modules.billing.models import BillingWebhookEventRecord
 
 
 def minimal_pdf() -> bytes:
@@ -30,7 +33,28 @@ def test_optional_providers_are_disabled_without_keys(client):
         "email_provider": "disabled",
         "email_available": False,
         "rate_limit": "disabled",
+        "billing_inbox": "unavailable",
+        "billing_oldest_unresolved_seconds": None,
     }
+
+
+def test_stale_billing_inbox_makes_readiness_fail(auth_env, monkeypatch):
+    monkeypatch.setattr("app.routes.migration_status", lambda _bind: "up_to_date")
+    with auth_env.session_factory() as session:
+        session.add(
+            BillingWebhookEventRecord(
+                event_id="stale-event",
+                event_type="subscription.charged",
+                status="pending",
+                attempts=0,
+                received_at=datetime.now(UTC) - timedelta(minutes=6),
+            )
+        )
+        session.commit()
+    response = auth_env.client.get("/health/ready")
+    assert response.status_code == 503
+    assert response.json()["billing_inbox"] == "stale"
+    assert response.json()["billing_oldest_unresolved_seconds"] >= 300
 
 
 def authenticated_fallback(auth_env):

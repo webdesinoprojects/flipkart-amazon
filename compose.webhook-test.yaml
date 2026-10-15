@@ -1,0 +1,11 @@
+services:
+  webhook-test:
+    image: caddy:2.10-alpine
+    restart: "no"
+    ports:
+      - "127.0.0.1:8081:8081"
+    volumes:
+      - ./infra/Caddyfile.webhook-test:/etc/caddy/Caddyfile:ro
+    depends_on:
+      api:
+        condition: service_healthy

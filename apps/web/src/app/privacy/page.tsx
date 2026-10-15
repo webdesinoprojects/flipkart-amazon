@@ -43,15 +43,19 @@ export default function PrivacyPage() {
           <li>Deliver verification codes and password-reset messages.</li>
           <li>Show private history, usage and remaining daily credits.</li>
           <li>Prevent abuse and investigate service errors.</li>
+          <li>
+            Match subscription payments to your account and apply paid credits.
+          </li>
         </ul>
       </section>
       <section>
         <h2>Service providers</h2>
         <p>
           SellerLabel uses infrastructure providers to host the service and
-          Resend to deliver account email. Providers receive only the data
-          needed to perform their service and are not permitted to use it for
-          their own marketing.
+          Resend to deliver account email, and Razorpay for subscription billing
+          when paid checkout is enabled. Providers receive only the data needed
+          to perform their service and are not permitted to use it for their own
+          marketing.
         </p>
       </section>
       <section>

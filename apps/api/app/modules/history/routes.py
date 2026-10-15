@@ -115,7 +115,7 @@ def summary(
     return dashboard_summary(
         session,
         user_id=authenticated.user.id,
-        daily_credit_limit=settings.early_access_daily_credits,
+        settings=settings,
     )
 
 

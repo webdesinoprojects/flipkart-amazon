@@ -15,8 +15,8 @@ from ...models import BatchRecord, SavedOutputRecord
 from ...platform.clock import as_utc
 from ...platform.http.errors import ApiError
 from ...providers.storage import StorageProvider
+from ..billing.service import plan_allowance
 from ..credits.service import (
-    EARLY_ACCESS_PLAN,
     assert_daily_allowance,
     available_credits,
     lock_account_for_credit_check,
@@ -84,7 +84,7 @@ def save_generated_batch(
             session,
             user_id=user_id,
             requested_labels=metadata.labelsReady,
-            daily_limit=settings.early_access_daily_credits,
+            daily_limit=plan_allowance(session, user_id, settings)[1],
             replaced_batch=existing,
         )
         return (
@@ -106,7 +106,7 @@ def save_generated_batch(
         session,
         user_id=user_id,
         requested_labels=metadata.labelsReady,
-        daily_limit=settings.early_access_daily_credits,
+        daily_limit=plan_allowance(session, user_id, settings)[1],
     )
 
     stored = storage.put(pdf_data, "PRINT_READY_LABELS.pdf", category="saved-output")
@@ -330,9 +330,7 @@ def _period_start(period: str) -> datetime | None:
     return local_start.astimezone(UTC)
 
 
-def dashboard_summary(
-    session: Session, *, user_id: str, daily_credit_limit: int
-) -> DashboardSummaryOut:
+def dashboard_summary(session: Session, *, user_id: str, settings: Settings) -> DashboardSummaryOut:
     now = datetime.now(UTC)
     today = now.astimezone(INDIA_TIME).date()
     first_day = today - timedelta(days=13)
@@ -360,6 +358,7 @@ def dashboard_summary(
             by_day[local_day]["labels"] += labels_ready
             by_day[local_day]["batches"] += 1
     recent = list_saved_batches(session, user_id=user_id, limit=5, offset=0).items
+    active_plan, daily_credit_limit = plan_allowance(session, user_id, settings)
     return DashboardSummaryOut(
         usageToday=by_day[today]["labels"],
         batchesToday=by_day[today]["batches"],
@@ -371,7 +370,7 @@ def dashboard_summary(
             daily_limit=daily_credit_limit,
             now=now,
         ),
-        activePlan=EARLY_ACCESS_PLAN,
+        activePlan=active_plan,
         dailyUsage=[
             DailyUsageOut(date=day, labels=values["labels"], batches=values["batches"])
             for day, values in by_day.items()

@@ -10,7 +10,7 @@
 		reverse_proxy mailpit:8025
 	}
 
-	@api path /api/* /health/* /docs /docs/* /openapi.json
+    @api path /api/* /health/*
 	handle @api {
 		reverse_proxy api:8000
 	}

@@ -39,6 +39,10 @@ None for local Docker development.
 
 Blank or incomplete optional credentials disable that provider and never prevent application boot. Copy `.env.example` to `.env` only when overrides are needed. Do not commit `.env`.
 
+Razorpay recurring billing is optional and disabled by default. See
+[`RAZORPAY.md`](RAZORPAY.md) for the Test Mode and live-mode rollout; never
+enable live subscriptions just by adding a key pair.
+
 ## Production notes
 
 Use HTTPS, private credentials, a strong database password, managed secret injection, and the documented Alembic migration gate before scaling API replicas. Set `ENVIRONMENT=production`, a random `AUTH_SECRET` of at least 32 characters, `AUTH_COOKIE_SECURE=true`, and HTTPS-only `APP_PUBLIC_ORIGINS`; unsafe production auth settings fail boot validation. Preserve temporary-object TTL cleanup and private URLs. See `docs/AUTHENTICATION.md` and `docs/MIGRATIONS.md`. Kubernetes, a standalone API gateway, and unnecessary microservices are intentionally excluded; this is a modular monolith with one asynchronous worker tier.

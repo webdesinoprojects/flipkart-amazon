@@ -1,0 +1,19 @@
+{
+    auto_https off
+    admin off
+}
+
+:8081 {
+    @billingWebhook {
+        method POST
+        path /api/v1/billing/webhook
+    }
+
+    handle @billingWebhook {
+        reverse_proxy api:8000
+    }
+
+    handle {
+        respond 404
+    }
+}

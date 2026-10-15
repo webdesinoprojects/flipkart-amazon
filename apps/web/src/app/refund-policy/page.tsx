@@ -13,30 +13,37 @@ export default function RefundPolicyPage() {
     <LegalPage
       eyebrow="SELLERLABEL / BILLING"
       title="Cancellation and refund policy"
-      summary="SellerLabel is free during early access and does not currently collect subscription payments."
+      summary="Free early access has no fee. Paid monthly subscriptions are available only when checkout is enabled."
     >
       <section>
         <h2>Early access</h2>
+        <p>The free plan has no fee or payment to refund.</p>
+      </section>
+      <section>
+        <h2>Paid subscription cancellation</h2>
         <p>
-          No subscription fee is collected during the current early-access
-          period, so there is no paid plan to cancel or refund.
+          Paid plans renew automatically each month after you authorise a
+          Razorpay subscription. You can cancel renewal in Account /
+          Subscription. Your paid daily allowance continues until the end of the
+          period already paid for. Contact support if cancellation is not
+          confirmed.
         </p>
       </section>
       <section>
         <h2>Duplicate or failed payments</h2>
         <p>
-          If a payment appears because of a duplicate or failed transaction
-          after billing becomes available, contact us with the payment
-          reference. Verified duplicate or failed-payment charges will be
-          returned to the original payment method.
+          If you see a duplicate charge or a charge without corresponding paid
+          access, contact us with the payment reference. We will investigate and
+          resolve a verified billing error, including a refund where applicable.
         </p>
       </section>
       <section>
-        <h2>Before paid plans begin</h2>
+        <h2>Before authorising payment</h2>
         <p>
           The checkout page will show the final price, renewal terms, included
-          daily credits and paid-plan cancellation rules before you authorise a
-          payment. This policy will be updated before subscriptions are enabled.
+          daily credits and payment method before you authorise a payment.
+          Unused daily credits do not roll over; cancellation does not
+          automatically refund an already paid period.
         </p>
       </section>
       <section>

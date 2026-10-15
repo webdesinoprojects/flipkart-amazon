@@ -1,3 +1,4 @@
+import re
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
@@ -94,6 +95,16 @@ class Settings(BaseSettings):
     email_from_name: str = "SellerLabel"
     email_reply_to: str = "sellerlabels@gmail.com"
 
+    # --- Razorpay Subscriptions (server only; disabled until configured) ---
+    billing_enabled: bool = False
+    razorpay_mode: Literal["test", "live"] = "test"
+    razorpay_key_id: str = ""
+    razorpay_key_secret: str = ""
+    razorpay_webhook_secret: str = ""
+    razorpay_plan_starter: str = ""
+    razorpay_plan_growth: str = ""
+    razorpay_plan_scale: str = ""
+
     # --- Request bounds -----------------------------------------------------
     max_json_body_bytes: int = Field(default=16 * 1024, ge=1024, le=1024 * 1024)
 
@@ -146,6 +157,31 @@ class Settings(BaseSettings):
         return bool(self.smtp_host)
 
     @property
+    def billing_configured(self) -> bool:
+        expected_key_prefix = "rzp_test_" if self.razorpay_mode == "test" else "rzp_live_"
+        return bool(
+            self.billing_enabled
+            and self.razorpay_configured
+            and self.razorpay_key_id.startswith(expected_key_prefix)
+            and all(
+                re.fullmatch(r"plan_[A-Za-z0-9]+", plan_id)
+                for plan_id in (
+                    self.razorpay_plan_starter,
+                    self.razorpay_plan_growth,
+                    self.razorpay_plan_scale,
+                )
+            )
+        )
+
+    @property
+    def razorpay_configured(self) -> bool:
+        return self.razorpay_api_configured and bool(self.razorpay_webhook_secret)
+
+    @property
+    def razorpay_api_configured(self) -> bool:
+        return bool(self.razorpay_key_id and self.razorpay_key_secret)
+
+    @property
     def uses_development_auth_secret(self) -> bool:
         return self.auth_secret == DEVELOPMENT_AUTH_SECRET
 
@@ -156,22 +192,37 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def _enforce_production_safety(self) -> "Settings":
-        if self.environment != "production":
-            return self
         problems: list[str] = []
-        if self.uses_development_auth_secret:
-            problems.append("AUTH_SECRET is still the development placeholder")
-        if len(self.auth_secret) < 32:
-            problems.append("AUTH_SECRET must be at least 32 characters")
-        if not self.auth_cookie_secure:
-            problems.append("AUTH_COOKIE_SECURE must be true")
-        insecure = [origin for origin in self.allowed_origins if not origin.startswith("https://")]
-        if insecure or not self.allowed_origins:
-            problems.append("APP_PUBLIC_ORIGINS must list https:// origins only")
-        if self.auth_session_absolute_seconds < self.auth_session_idle_seconds:
-            problems.append("absolute session lifetime must not be shorter than idle lifetime")
+        if self.billing_enabled and not self.billing_configured:
+            problems.append(
+                "Razorpay billing requires matching mode/key, webhook secret and all plan IDs"
+            )
+        if (
+            self.billing_enabled
+            and self.razorpay_mode == "live"
+            and self.environment != "production"
+        ):
+            problems.append("live Razorpay billing requires ENVIRONMENT=production")
+        if self.billing_enabled and self.razorpay_mode == "test":
+            live_origins = {"sellerlabel.in", "www.sellerlabel.in"}
+            if any(urlsplit(origin).hostname in live_origins for origin in self.allowed_origins):
+                problems.append("test Razorpay billing cannot run on the live SellerLabel domain")
+        if self.environment == "production":
+            if self.uses_development_auth_secret:
+                problems.append("AUTH_SECRET is still the development placeholder")
+            if len(self.auth_secret) < 32:
+                problems.append("AUTH_SECRET must be at least 32 characters")
+            if not self.auth_cookie_secure:
+                problems.append("AUTH_COOKIE_SECURE must be true")
+            insecure = [
+                origin for origin in self.allowed_origins if not origin.startswith("https://")
+            ]
+            if insecure or not self.allowed_origins:
+                problems.append("APP_PUBLIC_ORIGINS must list https:// origins only")
+            if self.auth_session_absolute_seconds < self.auth_session_idle_seconds:
+                problems.append("absolute session lifetime must not be shorter than idle lifetime")
         if problems:
-            raise ValueError("Unsafe production configuration: " + "; ".join(problems))
+            raise ValueError("Unsafe configuration: " + "; ".join(problems))
         return self
 
 

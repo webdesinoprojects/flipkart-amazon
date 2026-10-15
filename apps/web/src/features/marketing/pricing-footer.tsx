@@ -19,9 +19,9 @@ export function PricingFooter() {
             GROW WHEN READY.
           </h2>
           <p>
-            Free during early access. Paid plans are coming, with proposed
-            founding-member pricing from ₹99/month. One print-ready label uses
-            one credit.
+            Start with 100 free daily credits. Paid plans renew monthly until
+            cancelled and add more daily credits. One print-ready label uses one
+            credit.
           </p>
         </div>
         <div className={styles.pricingGrid}>
@@ -48,8 +48,14 @@ export function PricingFooter() {
                   {plan.dailyCredits.toLocaleString("en-IN")} labels per day
                 </strong>
               </div>
-              <Link className={styles.planButton} href="/register">
-                START FREE <span aria-hidden="true">↗</span>
+              <Link
+                className={styles.planButton}
+                href={
+                  plan.code === "free" ? "/register" : "/dashboard/subscription"
+                }
+              >
+                {plan.code === "free" ? "START FREE" : "VIEW PLAN"}{" "}
+                <span aria-hidden="true">↗</span>
               </Link>
             </article>
           ))}

@@ -3,7 +3,7 @@ import json
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session, selectinload
@@ -21,6 +21,8 @@ from .dependencies import (
 from .events import append_event, serialize_event
 from .models import BatchRecord, DocumentRecord, ProcessingEventRecord
 from .modules.auth.dependencies import CurrentSessionDep, ProtectedMutationDep
+from .modules.billing.models import BillingWebhookEventRecord
+from .platform.clock import as_utc
 from .platform.database.migrations import migration_status
 from .platform.rate_limit.limiter import RateLimiter
 from .providers.queue import TaskQueue
@@ -46,6 +48,7 @@ def live() -> dict[str, str]:
 
 @router.get("/health/ready")
 def ready(
+    response: Response,
     session: SessionDep,
     settings: SettingsDep,
     email_provider: EmailDep,
@@ -65,6 +68,22 @@ def ready(
         if not settings.rate_limit_enabled
         else ("valkey" if limiter.available else "degraded")
     )
+    billing_inbox = "unavailable"
+    billing_oldest_unresolved_seconds = None
+    if migrations == "up_to_date":
+        oldest_unresolved = session.scalar(
+            select(func.min(BillingWebhookEventRecord.received_at)).where(
+                BillingWebhookEventRecord.status.in_({"pending", "retry", "processing"})
+            )
+        )
+        billing_inbox = "clear"
+        if oldest_unresolved is not None:
+            billing_oldest_unresolved_seconds = max(
+                0, int((datetime.now(UTC) - as_utc(oldest_unresolved)).total_seconds())
+            )
+            if billing_oldest_unresolved_seconds >= 300:
+                billing_inbox = "stale"
+                response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
     return ProviderStatus(
         database=settings.database_provider,
         storage=settings.effective_storage_provider,
@@ -77,6 +96,8 @@ def ready(
         email_provider=email_provider.id,
         email_available=email_provider.available,
         rate_limit=rate_limit_state,
+        billing_inbox=billing_inbox,
+        billing_oldest_unresolved_seconds=billing_oldest_unresolved_seconds,
     )
 
 

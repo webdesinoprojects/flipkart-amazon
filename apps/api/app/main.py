@@ -11,6 +11,7 @@ from .modules.admin.routes import router as admin_router
 from .modules.auth.http_mapping import register_auth_error_handler
 from .modules.auth.recovery_routes import router as auth_recovery_router
 from .modules.auth.routes import router as auth_router
+from .modules.billing.routes import router as billing_router
 from .modules.history.routes import router as history_router
 from .platform.database.migrations import migration_status
 from .platform.http.body_limit import JsonBodyLimitMiddleware
@@ -74,3 +75,4 @@ app.include_router(auth_router)
 app.include_router(auth_recovery_router)
 app.include_router(admin_router)
 app.include_router(history_router)
+app.include_router(billing_router)

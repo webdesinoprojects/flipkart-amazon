@@ -136,6 +136,14 @@ services:
       EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-accounts@sellerlabel.in}
       EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-SellerLabel}
       EMAIL_REPLY_TO: ${EMAIL_REPLY_TO:-sellerlabels@gmail.com}
+      BILLING_ENABLED: ${BILLING_ENABLED:-false}
+      RAZORPAY_MODE: ${RAZORPAY_MODE:-test}
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-}
+      RAZORPAY_WEBHOOK_SECRET: ${RAZORPAY_WEBHOOK_SECRET:-}
+      RAZORPAY_PLAN_STARTER: ${RAZORPAY_PLAN_STARTER:-}
+      RAZORPAY_PLAN_GROWTH: ${RAZORPAY_PLAN_GROWTH:-}
+      RAZORPAY_PLAN_SCALE: ${RAZORPAY_PLAN_SCALE:-}
       MAX_JSON_BODY_BYTES: ${MAX_JSON_BODY_BYTES:-16384}
     expose:
       - "8000"
@@ -184,7 +192,10 @@ services:
         "--concurrency=${WORKER_CONCURRENCY:-2}",
         "--max-tasks-per-child=50",
       ]
-    environment: *backend_environment
+    environment:
+      <<: *backend_environment
+      BILLING_ENABLED: "false"
+      RAZORPAY_WEBHOOK_SECRET: ""
     volumes:
       - temporary_files:/var/lib/label-normalizer
     depends_on:
@@ -224,7 +235,12 @@ services:
       context: .
       dockerfile: apps/api/Dockerfile
     command: ["alembic", "-c", "alembic.ini", "upgrade", "head"]
-    environment: *backend_environment
+    environment:
+      <<: *backend_environment
+      BILLING_ENABLED: "false"
+      RAZORPAY_KEY_ID: ""
+      RAZORPAY_KEY_SECRET: ""
+      RAZORPAY_WEBHOOK_SECRET: ""
     depends_on:
       postgres:
         condition: service_healthy
