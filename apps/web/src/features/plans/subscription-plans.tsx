@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
 import { browserApiRequest } from "@/features/auth/browser-api";
 import { plans } from "./catalog";
+import { CancelSubscriptionDialog } from "./cancel-subscription-dialog";
 import styles from "@/features/dashboard/dashboard.module.css";
 
 type BillingStatus = {
@@ -36,6 +37,8 @@ export function SubscriptionPlans() {
   const [status, setStatus] = useState<BillingStatus | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelError, setCancelError] = useState("");
   const resumeUrl = hostedCheckoutUrl(status?.pendingCheckoutUrl ?? null);
   useEffect(() => {
     let active = true;
@@ -87,18 +90,8 @@ export function SubscriptionPlans() {
   }
 
   async function cancel() {
-    if (
-      !window.confirm(
-        status?.canCancelRenewal
-          ? status.paidThrough
-            ? "Stop automatic renewal? Your paid credits remain until the current paid period ends."
-            : "Stop automatic renewal? We will confirm the payment state with Razorpay first."
-          : "Cancel this open subscription checkout?",
-      )
-    )
-      return;
     setBusy(true);
-    setError("");
+    setCancelError("");
     try {
       setStatus(
         await browserApiRequest<BillingStatus>(
@@ -107,8 +100,9 @@ export function SubscriptionPlans() {
           true,
         ),
       );
+      setCancelOpen(false);
     } catch (cause) {
-      setError(
+      setCancelError(
         cause instanceof Error
           ? cause.message
           : "Cancellation could not be confirmed.",
@@ -164,16 +158,18 @@ export function SubscriptionPlans() {
           </a>
         )}
         {(status?.canCancelRenewal || status?.canCancelCheckout) && (
-          <button
-            className={styles.secondaryAction}
-            type="button"
-            onClick={() => void cancel()}
-            disabled={busy}
-          >
-            {status?.canCancelRenewal
-              ? "CANCEL RENEWAL"
-              : "CANCEL OPEN CHECKOUT"}
-          </button>
+          <CancelSubscriptionDialog
+            kind={status.canCancelRenewal ? "renewal" : "checkout"}
+            hasPaidPeriod={Boolean(status.paidThrough)}
+            open={cancelOpen}
+            busy={busy}
+            error={cancelError}
+            onOpenChange={(next) => {
+              setCancelOpen(next);
+              if (!next) setCancelError("");
+            }}
+            onConfirm={() => void cancel()}
+          />
         )}
         {!status?.available && (
           <p>

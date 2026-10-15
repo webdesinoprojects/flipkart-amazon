@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SubscriptionPlans } from "./subscription-plans";
 
@@ -22,6 +22,7 @@ const awaitingCharge = {
   canCancelRenewal: true,
 };
 
+beforeEach(() => requestMock.mockReset());
 afterEach(() => vi.restoreAllMocks());
 
 describe("SubscriptionPlans", () => {
@@ -39,26 +40,74 @@ describe("SubscriptionPlans", () => {
     ).toBeInTheDocument();
   });
 
-  it("calls the guarded server cancellation and displays its result", async () => {
+  it("requires an in-page confirmation before the guarded cancellation", async () => {
     requestMock.mockResolvedValueOnce(awaitingCharge).mockResolvedValueOnce({
       ...awaitingCharge,
       canCancelRenewal: false,
       pendingPlan: null,
     });
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<SubscriptionPlans />);
     const user = userEvent.setup();
     await user.click(
       await screen.findByRole("button", { name: "CANCEL RENEWAL" }),
     );
-    expect(requestMock).toHaveBeenCalledWith(
-      "/api/v1/billing/subscription/cancel",
-      { method: "POST" },
-      true,
+    expect(
+      screen.getByRole("dialog", { name: "Stop automatic renewal?" }),
+    ).toBeInTheDocument();
+    expect(requestMock).toHaveBeenCalledTimes(1);
+    await user.click(screen.getByRole("button", { name: "STOP RENEWAL" }));
+    await waitFor(() =>
+      expect(requestMock).toHaveBeenCalledWith(
+        "/api/v1/billing/subscription/cancel",
+        { method: "POST" },
+        true,
+      ),
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("button", { name: "CANCEL RENEWAL" }),
+      ).not.toBeInTheDocument(),
+    );
+  });
+
+  it("keeps an open checkout when the safe dialog action is chosen", async () => {
+    requestMock.mockResolvedValueOnce({
+      ...awaitingCharge,
+      pendingPlan: "Starter",
+      pendingStatus: "created",
+      canCancelCheckout: true,
+      canCancelRenewal: false,
+    });
+    render(<SubscriptionPlans />);
+    const user = userEvent.setup();
+    await user.click(
+      await screen.findByRole("button", { name: "CANCEL OPEN CHECKOUT" }),
     );
     expect(
-      screen.queryByRole("button", { name: "CANCEL RENEWAL" }),
-    ).not.toBeInTheDocument();
+      screen.getByRole("dialog", { name: "Cancel this checkout?" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/only cancel if you have not paid/i),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "KEEP CHECKOUT" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(requestMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the dialog open and shows a server cancellation error", async () => {
+    requestMock
+      .mockResolvedValueOnce(awaitingCharge)
+      .mockRejectedValueOnce(new Error("Payment state needs review."));
+    render(<SubscriptionPlans />);
+    const user = userEvent.setup();
+    await user.click(
+      await screen.findByRole("button", { name: "CANCEL RENEWAL" }),
+    );
+    await user.click(screen.getByRole("button", { name: "STOP RENEWAL" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Payment state needs review.",
+    );
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
   it("does not claim a halted subscription will renew", async () => {
