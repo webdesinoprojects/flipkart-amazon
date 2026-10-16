@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from urllib.parse import urlsplit
 
 from sqlalchemy import select
@@ -35,22 +35,46 @@ def active_subscription(
     return None
 
 
+def active_paid_subscriptions(
+    session: Session, user_id: str, now: datetime | None = None
+) -> list[BillingSubscriptionRecord]:
+    instant = as_utc(now or datetime.now(UTC))
+    return [
+        row
+        for row in _rows(session, user_id)
+        if row.paid_through and as_utc(row.paid_through) > instant
+    ]
+
+
+def _plan_rank(code: str) -> int:
+    return tuple(PLANS).index(code)
+
+
 def plan_allowance(session: Session, user_id: str, settings: Settings) -> tuple[str, int]:
-    row = active_subscription(session, user_id)
-    if row:
-        plan = PLANS[row.plan_code]
-        return plan.name, plan.daily_credits
+    rows = active_paid_subscriptions(session, user_id)
+    if rows:
+        plans = [
+            PLANS[row.plan_code]
+            for row in sorted(rows, key=lambda row: _plan_rank(row.plan_code), reverse=True)
+        ]
+        return " + ".join(plan.name for plan in plans), sum(plan.daily_credits for plan in plans)
     return "Early access", settings.early_access_daily_credits
 
 
 def public_status(session: Session, user_id: str, settings: Settings) -> dict:
-    current = active_subscription(session, user_id)
+    paid = active_paid_subscriptions(session, user_id)
+    paid.sort(key=lambda row: _plan_rank(row.plan_code), reverse=True)
+    current = paid[0] if paid else None
+    previous_plan_renewal_pending = bool(
+        current and any(not row.cancel_at_cycle_end for row in paid[1:])
+    )
+    paid_ids = {row.id for row in paid}
     pending = next(
         (
             row
             for row in _rows(session, user_id)
             if row.status in {"created", "authenticated", "pending", "active", "halted", "paused"}
-            and (current is None or row.id != current.id)
+            and row.id not in paid_ids
             and not row.cancel_at_cycle_end
         ),
         None,
@@ -58,8 +82,16 @@ def public_status(session: Session, user_id: str, settings: Settings) -> dict:
     return {
         "available": settings.billing_configured,
         "activePlan": PLANS[current.plan_code].name if current else "Early access",
+        "activePlans": [
+            {
+                "name": PLANS[row.plan_code].name,
+                "dailyCredits": PLANS[row.plan_code].daily_credits,
+                "paidThrough": row.paid_through.isoformat(),
+            }
+            for row in paid
+        ],
         "currentStatus": current.status if current else None,
-        "dailyCredits": PLANS[current.plan_code].daily_credits
+        "dailyCredits": sum(PLANS[row.plan_code].daily_credits for row in paid)
         if current
         else settings.early_access_daily_credits,
         "paidThrough": current.paid_through.isoformat() if current else None,
@@ -71,13 +103,18 @@ def public_status(session: Session, user_id: str, settings: Settings) -> dict:
         else None,
         "canCancelCheckout": bool(pending and pending.status == "created"),
         "canCancelRenewal": bool(
-            (
-                current
-                and not current.cancel_at_cycle_end
-                and current.status in {"active", "pending", "halted", "paused"}
+            not previous_plan_renewal_pending
+            and (not pending or not current)
+            and (
+                (
+                    current
+                    and not current.cancel_at_cycle_end
+                    and current.status in {"active", "pending", "halted", "paused"}
+                )
+                or (pending and pending.status in {"active", "pending", "halted", "paused"})
             )
-            or (pending and pending.status in {"active", "pending", "halted", "paused"})
         ),
+        "previousPlanRenewalPending": previous_plan_renewal_pending,
     }
 
 
@@ -131,14 +168,27 @@ def start_checkout(
     }
     lock_account_for_credit_check(session, user_id=user_id)
     rows = _rows(session, user_id)
-    if any(row.paid_through and as_utc(row.paid_through) > datetime.now(UTC) for row in rows):
+    paid = [
+        row for row in rows if row.paid_through and as_utc(row.paid_through) > datetime.now(UTC)
+    ]
+    if paid and (
+        _plan_rank(code) <= max(_plan_rank(row.plan_code) for row in paid)
+        or any(row.status not in {"active", "cancelled"} for row in paid)
+    ):
         raise ApiError(
             status_code=409,
             code="PLAN_ALREADY_ACTIVE",
-            message=(
-                "You already have a paid plan. Cancel renewal and wait for it to end "
-                "before choosing another."
-            ),
+            message="Choose a higher tier than your current paid plan to add capacity.",
+        )
+    if paid and any(
+        not row.cancel_at_cycle_end
+        and as_utc(row.paid_through) - datetime.now(UTC) < timedelta(hours=24)
+        for row in paid
+    ):
+        raise ApiError(
+            status_code=409,
+            code="UPGRADE_TOO_CLOSE_TO_RENEWAL",
+            message="A plan is close to renewal. Contact support before upgrading.",
         )
     for row in rows:
         if row.status in {"created", "authenticated", "pending", "active", "halted", "paused"}:
@@ -157,6 +207,22 @@ def start_checkout(
                     code="BILLING_PROVIDER_UNAVAILABLE",
                     message="Subscription state could not be confirmed.",
                 )
+            if row in paid:
+                if (
+                    remote.get("status")
+                    not in {"active", "pending", "halted", "paused", "cancelled", "completed"}
+                    or type(remote.get("paid_count")) is not int
+                    or remote["paid_count"] < 1
+                ):
+                    raise ApiError(
+                        status_code=409,
+                        code="UPGRADE_NEEDS_REVIEW",
+                        message=(
+                            "Your current payment state needs review. "
+                            "Contact support before upgrading."
+                        ),
+                    )
+                continue
             if remote.get("status") in {
                 "created",
                 "authenticated",
@@ -217,7 +283,17 @@ def cancel_renewal(
         )
     lock_account_for_credit_check(session, user_id=user_id)
     current = active_subscription(session, user_id)
-    target = current
+    pending_checkout = next(
+        (
+            row
+            for row in _rows(session, user_id)
+            if row.status in {"created", "authenticated", "pending", "active", "halted", "paused"}
+            and not row.paid_through
+            and not row.cancel_at_cycle_end
+        ),
+        None,
+    )
+    target = pending_checkout or current
     if target is None:
         target = next(
             (

@@ -84,6 +84,35 @@ def test_saved_output_history_and_summary_are_real_and_owner_scoped(auth_env):
     assert auth_env.client.get(saved["previewUrl"]).status_code == 404
 
 
+def test_password_reset_preserves_saved_batches_and_used_daily_credits(auth_env):
+    email = "credit-reset@example.com"
+    csrf = auth_env.create_account(email)
+    response = save(auth_env, csrf)
+    assert response.status_code == 201, response.text
+    before = auth_env.client.get("/api/v1/dashboard/summary")
+    assert before.status_code == 200
+    assert before.json()["usageToday"] == 2
+    assert before.json()["availableCredits"] == 98
+
+    requested = auth_env.client.post("/api/v1/auth/password/forgot", json={"email": email})
+    assert requested.status_code == 200
+    reset = auth_env.client.post(
+        "/api/v1/auth/password/reset",
+        json={"token": auth_env.email.last_token(), "password": "a fresh private password"},
+    )
+    assert reset.status_code == 200, reset.text
+    auth_env.clear_cookies()
+    assert auth_env.login(email, "a fresh private password").status_code == 200
+
+    after = auth_env.client.get("/api/v1/dashboard/summary")
+    assert after.status_code == 200
+    assert after.json()["usageToday"] == before.json()["usageToday"]
+    assert after.json()["availableCredits"] == before.json()["availableCredits"]
+    history = auth_env.client.get("/api/v1/history/batches")
+    assert history.status_code == 200
+    assert history.json()["total"] == 1
+
+
 def test_repeated_identical_save_is_idempotent(auth_env):
     csrf = auth_env.create_account("idempotent@example.com")
     first = save(auth_env, csrf)

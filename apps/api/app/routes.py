@@ -5,8 +5,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
 from fastapi.responses import StreamingResponse
-from sqlalchemy import func, select, text
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy import and_, func, or_, select, text
+from sqlalchemy.orm import Session, aliased, selectinload
 
 from .capabilities.email.provider import EmailProvider
 from .config import Settings
@@ -21,7 +21,11 @@ from .dependencies import (
 from .events import append_event, serialize_event
 from .models import BatchRecord, DocumentRecord, ProcessingEventRecord
 from .modules.auth.dependencies import CurrentSessionDep, ProtectedMutationDep
-from .modules.billing.models import BillingWebhookEventRecord
+from .modules.billing.models import (
+    BillingChargeRecord,
+    BillingSubscriptionRecord,
+    BillingWebhookEventRecord,
+)
 from .platform.clock import as_utc
 from .platform.database.migrations import migration_status
 from .platform.rate_limit.limiter import RateLimiter
@@ -70,6 +74,8 @@ def ready(
     )
     billing_inbox = "unavailable"
     billing_oldest_unresolved_seconds = None
+    billing_upgrade_cleanup = "unavailable"
+    billing_oldest_upgrade_cleanup_seconds = None
     if migrations == "up_to_date":
         oldest_unresolved = session.scalar(
             select(func.min(BillingWebhookEventRecord.received_at)).where(
@@ -83,6 +89,32 @@ def ready(
             )
             if billing_oldest_unresolved_seconds >= 300:
                 billing_inbox = "stale"
+                response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+        old = aliased(BillingSubscriptionRecord)
+        higher = aliased(BillingSubscriptionRecord)
+        oldest_upgrade_charge = session.scalar(
+            select(func.min(BillingChargeRecord.paid_at))
+            .select_from(old)
+            .join(higher, higher.user_id == old.user_id)
+            .join(BillingChargeRecord, BillingChargeRecord.subscription_id == higher.id)
+            .where(
+                old.paid_through > datetime.now(UTC),
+                old.cancel_at_cycle_end.is_(False),
+                higher.paid_through > datetime.now(UTC),
+                BillingChargeRecord.refunded_at.is_(None),
+                or_(
+                    and_(old.plan_code == "starter", higher.plan_code.in_(("growth", "scale"))),
+                    and_(old.plan_code == "growth", higher.plan_code == "scale"),
+                ),
+            )
+        )
+        billing_upgrade_cleanup = "clear"
+        if oldest_upgrade_charge is not None:
+            billing_oldest_upgrade_cleanup_seconds = max(
+                0, int((datetime.now(UTC) - as_utc(oldest_upgrade_charge)).total_seconds())
+            )
+            if billing_oldest_upgrade_cleanup_seconds >= 300:
+                billing_upgrade_cleanup = "stale"
                 response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
     return ProviderStatus(
         database=settings.database_provider,
@@ -98,6 +130,8 @@ def ready(
         rate_limit=rate_limit_state,
         billing_inbox=billing_inbox,
         billing_oldest_unresolved_seconds=billing_oldest_unresolved_seconds,
+        billing_upgrade_cleanup=billing_upgrade_cleanup,
+        billing_oldest_upgrade_cleanup_seconds=billing_oldest_upgrade_cleanup_seconds,
     )
 
 

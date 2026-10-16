@@ -32,6 +32,10 @@ celery_app.conf.update(
             "schedule": 3600.0,
         },
         "billing-process-events": {"task": "billing.process_events", "schedule": 20.0},
+        "billing-cancel-superseded": {
+            "task": "billing.cancel_superseded",
+            "schedule": 20.0,
+        },
         "billing-reconcile": {"task": "billing.reconcile", "schedule": 300.0},
         "billing-cleanup-events": {"task": "billing.cleanup_events", "schedule": 86400.0},
     },

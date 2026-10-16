@@ -5,11 +5,13 @@ import { Check } from "lucide-react";
 import { browserApiRequest } from "@/features/auth/browser-api";
 import { plans } from "./catalog";
 import { CancelSubscriptionDialog } from "./cancel-subscription-dialog";
+import { UpgradeSubscriptionDialog } from "./upgrade-subscription-dialog";
 import styles from "@/features/dashboard/dashboard.module.css";
 
 type BillingStatus = {
   available: boolean;
   activePlan: string;
+  activePlans: { name: string; dailyCredits: number; paidThrough: string }[];
   currentStatus: string | null;
   dailyCredits: number;
   paidThrough: string | null;
@@ -19,6 +21,7 @@ type BillingStatus = {
   pendingStatus: string | null;
   canCancelCheckout: boolean;
   canCancelRenewal: boolean;
+  previousPlanRenewalPending: boolean;
 };
 
 function hostedCheckoutUrl(value: string | null): string | null {
@@ -40,6 +43,9 @@ export function SubscriptionPlans() {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelError, setCancelError] = useState("");
   const resumeUrl = hostedCheckoutUrl(status?.pendingCheckoutUrl ?? null);
+  const activeTier = plans.findIndex(
+    (plan) => plan.name === status?.activePlan,
+  );
   useEffect(() => {
     let active = true;
     browserApiRequest<BillingStatus>("/api/v1/billing/subscription").then(
@@ -118,9 +124,20 @@ export function SubscriptionPlans() {
         <span className={styles.pageEyebrow}>CURRENT PLAN</span>
         <p className={styles.planCapacity}>
           {status
-            ? `${status.activePlan} · ${status.dailyCredits.toLocaleString("en-IN")} credits/day`
+            ? `${status.activePlans?.map((plan) => plan.name).join(" + ") || status.activePlan} · ${status.dailyCredits.toLocaleString("en-IN")} credits/day`
             : "Loading your plan…"}
         </p>
+        {status?.activePlans && status.activePlans.length > 1 && (
+          <p>
+            Paid allowances stack only while their billing periods overlap.{" "}
+            {status.activePlans
+              .map(
+                (plan) =>
+                  `${plan.name}: ${plan.dailyCredits.toLocaleString("en-IN")}/day until ${new Date(plan.paidThrough).toLocaleDateString("en-IN", { dateStyle: "medium" })}`,
+              )
+              .join(" · ")}
+          </p>
+        )}
         {status?.paidThrough && (
           <p>
             Paid through{" "}
@@ -150,6 +167,12 @@ export function SubscriptionPlans() {
                   ? "payment needs attention. Check Razorpay or contact support."
                   : "payment confirmation is being checked."}{" "}
             Do not start another subscription.
+          </p>
+        )}
+        {status?.previousPlanRenewalPending && (
+          <p role="status">
+            Renewal on your previous plans is being switched off. Their
+            already-paid credits stay available until each paid period ends.
           </p>
         )}
         {resumeUrl && (
@@ -205,21 +228,44 @@ export function SubscriptionPlans() {
                   </div>
                 ))}
               </div>
-              <button
-                className={styles.subscribeAction}
-                type="button"
-                disabled={
-                  !status?.available ||
-                  busy ||
-                  status.activePlan !== "Early access" ||
-                  !!status.pendingPlan
-                }
-                onClick={() =>
-                  void start(plan.code as "starter" | "growth" | "scale")
-                }
-              >
-                {status?.available ? "SUBSCRIBE" : "COMING SOON"}
-              </button>
+              {status?.available &&
+              activeTier > 0 &&
+              plans.indexOf(plan) > activeTier &&
+              !status.pendingPlan ? (
+                <UpgradeSubscriptionDialog
+                  planName={plan.name}
+                  priceInr={plan.monthlyPriceInr}
+                  addedCredits={plan.dailyCredits}
+                  currentCredits={status.dailyCredits}
+                  busy={busy}
+                  error={error}
+                  onConfirm={() => void start(plan.code)}
+                />
+              ) : (
+                <button
+                  className={styles.subscribeAction}
+                  type="button"
+                  disabled={
+                    !status?.available ||
+                    busy ||
+                    status.activePlan !== "Early access" ||
+                    !!status.pendingPlan
+                  }
+                  onClick={() =>
+                    void start(plan.code as "starter" | "growth" | "scale")
+                  }
+                >
+                  {status?.activePlan === plan.name
+                    ? "CURRENT PLAN"
+                    : !status?.available
+                      ? "COMING SOON"
+                      : status.pendingPlan
+                        ? "CHECKOUT IN PROGRESS"
+                        : status.activePlan !== "Early access"
+                          ? "LOWER TIER"
+                          : "SUBSCRIBE"}
+                </button>
+              )}
             </article>
           ))}
       </div>
@@ -228,6 +274,14 @@ export function SubscriptionPlans() {
         renewal from this page. One prepared label uses one daily credit; unused
         credits do not roll over.
       </p>
+      {activeTier > 0 && (
+        <p>
+          Need more capacity? A higher tier is a full additional monthly
+          payment. Verified paid allowances stack while their periods are
+          active; older tiers will stop renewing. If your current plan is close
+          to renewal, contact support before upgrading.
+        </p>
+      )}
     </>
   );
 }

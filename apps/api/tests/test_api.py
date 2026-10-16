@@ -35,6 +35,8 @@ def test_optional_providers_are_disabled_without_keys(client):
         "rate_limit": "disabled",
         "billing_inbox": "unavailable",
         "billing_oldest_unresolved_seconds": None,
+        "billing_upgrade_cleanup": "unavailable",
+        "billing_oldest_upgrade_cleanup_seconds": None,
     }
 
 

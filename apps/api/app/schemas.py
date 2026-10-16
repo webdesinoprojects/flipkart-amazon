@@ -67,3 +67,5 @@ class ProviderStatus(BaseModel):
     rate_limit: Literal["valkey", "degraded", "disabled"]
     billing_inbox: Literal["clear", "stale", "unavailable"]
     billing_oldest_unresolved_seconds: int | None
+    billing_upgrade_cleanup: Literal["clear", "stale", "unavailable"]
+    billing_oldest_upgrade_cleanup_seconds: int | None

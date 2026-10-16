@@ -126,6 +126,16 @@
   border-color: var(--dialog-danger);
 }
 
+.upgradeConfirm {
+  border: 1px solid #167647;
+  background: #167647;
+  color: #ffffff;
+}
+
+.upgradeConfirm:hover:not(:disabled) {
+  background: #0f5c36;
+}
+
 @media (max-width: 420px) {
   .actions {
     flex-direction: column;

@@ -6,10 +6,11 @@ import logging
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import and_, delete, or_, select
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session, aliased, sessionmaker
 
 from ...platform.clock import as_utc
 from ...platform.http.errors import ApiError
+from .catalog import PLANS
 from .gateway import RazorpayGateway
 from .models import BillingChargeRecord, BillingSubscriptionRecord, BillingWebhookEventRecord
 from .service import accept_charge, revoke_fully_refunded_charge
@@ -391,6 +392,109 @@ def reconcile_due_subscriptions(
                     row.next_reconcile_at = datetime.now(UTC) + timedelta(minutes=15)
                     session.commit()
     return report
+
+
+def cancel_superseded_renewals(
+    session_factory: sessionmaker[Session], gateway: RazorpayGateway, *, limit: int = 10
+) -> dict[str, int]:
+    """After an upgrade charge is verified, stop lower tiers renewing.
+
+    The buyer retains every already-paid daily allowance until its own paid
+    period ends. Re-running this task is safe after a worker/provider outage.
+    """
+    now = datetime.now(UTC)
+    old = aliased(BillingSubscriptionRecord)
+    higher = aliased(BillingSubscriptionRecord)
+    with session_factory() as session:
+        user_ids = list(
+            session.scalars(
+                select(old.user_id)
+                .select_from(old)
+                .join(higher, higher.user_id == old.user_id)
+                .where(
+                    old.paid_through > now,
+                    old.cancel_at_cycle_end.is_(False),
+                    higher.paid_through > now,
+                    or_(
+                        and_(old.plan_code == "starter", higher.plan_code.in_(("growth", "scale"))),
+                        and_(old.plan_code == "growth", higher.plan_code == "scale"),
+                    ),
+                )
+                .distinct()
+                .order_by(old.user_id)
+                .limit(limit)
+            )
+        )
+    result = {"cancelled": 0, "failed": 0}
+    for user_id in user_ids:
+        with session_factory() as session:
+            candidate_ids = list(
+                session.scalars(
+                    select(BillingSubscriptionRecord.id).where(
+                        BillingSubscriptionRecord.user_id == user_id,
+                        BillingSubscriptionRecord.paid_through > datetime.now(UTC),
+                        BillingSubscriptionRecord.cancel_at_cycle_end.is_(False),
+                    )
+                )
+            )
+        for candidate_id in candidate_ids:
+            try:
+                if _cancel_one_superseded(session_factory, gateway, user_id, candidate_id):
+                    result["cancelled"] += 1
+            except (ApiError, ValueError) as error:
+                result["failed"] += 1
+                logger.error(
+                    "billing_upgrade_renewal_cancellation_failed",
+                    extra={"user_id": user_id, "error_type": type(error).__name__},
+                )
+    return result
+
+
+def _cancel_one_superseded(
+    session_factory: sessionmaker[Session], gateway: RazorpayGateway, user_id: str, old_id: str
+) -> bool:
+    # Commit each old mandate independently. A failure on Growth must not
+    # roll back a successful Starter cancellation when upgrading to Scale.
+    with session_factory() as session:
+        paid = list(
+            session.scalars(
+                select(BillingSubscriptionRecord)
+                .where(
+                    BillingSubscriptionRecord.user_id == user_id,
+                    BillingSubscriptionRecord.paid_through > datetime.now(UTC),
+                )
+                .order_by(BillingSubscriptionRecord.created_at.desc())
+                .with_for_update()
+            )
+        )
+        if len(paid) < 2:
+            return False
+        old = next((row for row in paid if row.id == old_id), None)
+        highest = max(tuple(PLANS).index(row.plan_code) for row in paid)
+        if old is None or old.cancel_at_cycle_end or tuple(PLANS).index(old.plan_code) >= highest:
+            return False
+        remote = gateway.get_subscription(old.provider_id)
+        if (
+            remote.get("id") != old.provider_id
+            or remote.get("plan_id") != old.provider_plan_id
+            or remote.get("quantity") != 1
+            or type(remote.get("paid_count")) is not int
+            or remote["paid_count"] < 1
+        ):
+            raise ValueError("Superseded subscription could not be verified")
+        if remote.get("status") not in {"active", "pending", "halted", "paused"}:
+            if remote.get("status") not in {"cancelled", "completed", "expired"}:
+                raise ValueError("Superseded subscription state needs review")
+        else:
+            cancelled = gateway.cancel_at_cycle_end(old.provider_id)
+            if (
+                cancelled.get("id") != old.provider_id
+                or cancelled.get("plan_id") != old.provider_plan_id
+            ):
+                raise ValueError("Superseded subscription cancellation was unconfirmed")
+        old.cancel_at_cycle_end = True
+        session.commit()
+        return True
 
 
 def prune_processed_events(session_factory: sessionmaker[Session]) -> int:

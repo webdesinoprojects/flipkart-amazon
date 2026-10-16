@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { currentUser } from "@/features/auth/server-api";
 import { DashboardPage } from "@/features/dashboard/page-shell";
+import { SupportContact } from "@/features/dashboard/support-contact";
 import styles from "@/features/dashboard/dashboard.module.css";
 
 export const metadata = { title: "Account settings" };
@@ -43,6 +44,7 @@ export default async function AccountSettingsPage() {
           </p>
         </article>
       </div>
+      <SupportContact />
     </DashboardPage>
   );
 }

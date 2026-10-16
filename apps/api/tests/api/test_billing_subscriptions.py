@@ -6,6 +6,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import delete, select
 
 from app.main import app
+from app.models import BatchRecord
 from app.modules.auth.models import UserRecord
 from app.modules.billing.gateway import RazorpayGateway
 from app.modules.billing.models import (
@@ -14,11 +15,13 @@ from app.modules.billing.models import (
     BillingWebhookEventRecord,
 )
 from app.modules.billing.processing import (
+    cancel_superseded_renewals,
     process_due_events,
     reconcile_due_subscriptions,
     reconcile_one_subscription,
 )
 from app.modules.billing.routes import gateway_dependency
+from app.platform.http.errors import ApiError
 
 
 class FakeRazorpay(RazorpayGateway):
@@ -103,7 +106,7 @@ class FakeRazorpay(RazorpayGateway):
     def cancel_at_cycle_end(self, subscription_id):
         self.end_cancellations += 1
         self.status = "active"
-        return {"id": subscription_id, "status": "active"}
+        return {"id": subscription_id, "plan_id": "plan_Starter", "status": "active"}
 
     def cancel_now(self, subscription_id):
         self.immediate_cancellations += 1
@@ -139,21 +142,24 @@ def _webhook(
     event="subscription.charged",
     signature_ok=True,
     period_end=None,
+    subscription_id="sub_test_123",
+    payment_id="pay_test_123",
 ):
     current_end = period_end or int((datetime.now(UTC) + timedelta(days=30)).timestamp())
-    app.dependency_overrides[gateway_dependency]().ends = current_end
+    if subscription_id == "sub_test_123":
+        app.dependency_overrides[gateway_dependency]().ends = current_end
     payload = {
         "entity": "event",
         "event": event,
         "payload": {
             "subscription": {
                 "entity": {
-                    "id": "sub_test_123",
+                    "id": subscription_id,
                     "current_start": current_end - 31 * 24 * 60 * 60,
                     "current_end": current_end,
                 }
             },
-            "payment": {"entity": {"id": "pay_test_123"}},
+            "payment": {"entity": {"id": payment_id}},
         },
     }
     raw = json.dumps(payload).encode()
@@ -200,6 +206,328 @@ def _refund_webhook(auth_env):
             "X-Razorpay-Event-Id": "evt_refund",
         },
     )
+
+
+def _paid_starter_then_growth_checkout(auth_env):
+    fake, token = _setup(auth_env)
+    headers = auth_env.csrf_headers(token)
+    assert (
+        auth_env.client.post(
+            "/api/v1/billing/subscriptions", json={"plan": "starter"}, headers=headers
+        ).status_code
+        == 200
+    )
+    fake.status = "active"
+    assert _webhook(auth_env).status_code == 200
+    assert _drain(auth_env, fake)["done"] == 1
+    original_subscription = fake.get_subscription
+    fake.get_plan = lambda plan_id: {
+        "id": plan_id,
+        "period": "monthly",
+        "interval": 1,
+        "item": {"amount": 19900 if plan_id == "plan_Growth" else 9900, "currency": "INR"},
+    }
+    fake.create_subscription = lambda plan_id, user_id: {
+        "id": "sub_growth_123",
+        "plan_id": plan_id,
+        "quantity": 1,
+        "status": "created",
+        "short_url": "https://rzp.io/rzp/growth",
+    }
+    fake.growth_status = "created"
+    fake.get_subscription = lambda subscription_id: (
+        {
+            "id": subscription_id,
+            "plan_id": "plan_Growth",
+            "status": fake.growth_status,
+            "paid_count": 1 if fake.growth_status == "active" else 0,
+            "quantity": 1,
+        }
+        if subscription_id == "sub_growth_123"
+        else original_subscription(subscription_id)
+    )
+    checkout = auth_env.client.post(
+        "/api/v1/billing/subscriptions", json={"plan": "growth"}, headers=headers
+    )
+    assert checkout.status_code == 200, checkout.text
+    return fake, headers
+
+
+def test_upgrade_stacks_only_verified_paid_periods_and_stops_old_renewal(auth_env, monkeypatch):
+    fake, headers = _paid_starter_then_growth_checkout(auth_env)
+    with auth_env.session_factory() as session:
+        starter = session.scalar(
+            select(BillingSubscriptionRecord).where(
+                BillingSubscriptionRecord.provider_id == "sub_test_123"
+            )
+        )
+        session.add(
+            BatchRecord(
+                user_id=starter.user_id,
+                status="saved",
+                labels_ready=200,
+                completed_at=datetime.now(UTC),
+                expires_at=datetime.now(UTC) + timedelta(days=30),
+            )
+        )
+        session.commit()
+    pending = auth_env.client.get("/api/v1/billing/subscription").json()
+    assert pending["activePlan"] == "Starter"
+    assert pending["dailyCredits"] == 300
+    assert pending["pendingPlan"] == "Growth"
+    assert pending["canCancelCheckout"] is True
+    assert pending["canCancelRenewal"] is False
+    assert auth_env.client.get("/api/v1/dashboard/summary").json()["availableCredits"] == 100
+    assert fake.end_cancellations == 0
+    assert (
+        auth_env.client.post(
+            "/api/v1/billing/subscriptions", json={"plan": "starter"}, headers=headers
+        ).status_code
+        == 409
+    )
+
+    end = int((datetime.now(UTC) + timedelta(days=30)).timestamp())
+    fake.growth_status = "active"
+    original_payment = fake.get_payment
+    fake.get_payment = lambda payment_id: (
+        {
+            "id": "pay_growth_123",
+            "status": "captured",
+            "captured": True,
+            "amount": 19900,
+            "currency": "INR",
+            "invoice_id": "inv_growth_123",
+        }
+        if payment_id == "pay_growth_123"
+        else original_payment(payment_id)
+    )
+    original_invoice = fake.get_invoice
+    fake.get_invoice = lambda invoice_id: (
+        {
+            "id": "inv_growth_123",
+            "subscription_id": "sub_growth_123",
+            "payment_id": "pay_growth_123",
+            "status": "paid",
+            "type": "invoice",
+            "amount_paid": 19900,
+            "currency": "INR",
+            "line_items": [{"type": "plan", "quantity": 1, "amount": 19900, "currency": "INR"}],
+            "billing_start": end - 31 * 24 * 3600,
+            "billing_end": end,
+        }
+        if invoice_id == "inv_growth_123"
+        else original_invoice(invoice_id)
+    )
+    assert (
+        _webhook(
+            auth_env,
+            event_id="evt_growth",
+            period_end=end,
+            subscription_id="sub_growth_123",
+            payment_id="pay_growth_123",
+        ).status_code
+        == 200
+    )
+    assert _drain(auth_env, fake)["done"] == 1
+    stacked = auth_env.client.get("/api/v1/billing/subscription").json()
+    assert stacked["activePlan"] == "Growth"
+    assert stacked["dailyCredits"] == 1000
+    assert [plan["name"] for plan in stacked["activePlans"]] == ["Growth", "Starter"]
+    assert stacked["previousPlanRenewalPending"] is True
+    assert stacked["canCancelRenewal"] is False
+    assert auth_env.client.get("/api/v1/dashboard/summary").json()["availableCredits"] == 800
+
+    monkeypatch.setattr("app.routes.migration_status", lambda _bind: "up_to_date")
+    with auth_env.session_factory() as session:
+        charge = session.scalar(
+            select(BillingChargeRecord).where(
+                BillingChargeRecord.provider_payment_id == "pay_growth_123"
+            )
+        )
+        charge.paid_at = datetime.now(UTC) - timedelta(minutes=6)
+        session.commit()
+    unhealthy = auth_env.client.get("/health/ready")
+    assert unhealthy.status_code == 503
+    assert unhealthy.json()["billing_upgrade_cleanup"] == "stale"
+
+    result = cancel_superseded_renewals(auth_env.session_factory, fake)
+    assert result == {"cancelled": 1, "failed": 0}
+    assert fake.end_cancellations == 1
+    assert cancel_superseded_renewals(auth_env.session_factory, fake)["cancelled"] == 0
+    healthy = auth_env.client.get("/health/ready")
+    assert healthy.status_code == 200
+    assert healthy.json()["billing_upgrade_cleanup"] == "clear"
+    assert (
+        auth_env.client.get("/api/v1/billing/subscription").json()["previousPlanRenewalPending"]
+        is False
+    )
+    assert auth_env.client.get("/api/v1/billing/subscription").json()["canCancelRenewal"] is True
+    with auth_env.session_factory() as session:
+        starter = session.scalar(
+            select(BillingSubscriptionRecord).where(
+                BillingSubscriptionRecord.provider_id == "sub_test_123"
+            )
+        )
+        starter.paid_through = datetime.now(UTC) - timedelta(seconds=1)
+        session.commit()
+    after_expiry = auth_env.client.get("/api/v1/billing/subscription").json()
+    assert after_expiry["dailyCredits"] == 700
+    assert auth_env.client.get("/api/v1/dashboard/summary").json()["availableCredits"] == 500
+
+
+def test_cancelling_upgrade_checkout_does_not_cancel_paid_starter(auth_env):
+    fake, headers = _paid_starter_then_growth_checkout(auth_env)
+    cancelled_ids = []
+    fake.cancel_now = lambda subscription_id: (
+        cancelled_ids.append(subscription_id) or {"id": subscription_id, "status": "cancelled"}
+    )
+    cancelled = auth_env.client.post("/api/v1/billing/subscription/cancel", headers=headers)
+    assert cancelled.status_code == 200, cancelled.text
+    assert cancelled_ids == ["sub_growth_123"]
+    assert cancelled.json()["activePlan"] == "Starter"
+    assert cancelled.json()["pendingPlan"] is None
+
+
+def test_failed_old_renewal_cancellation_is_retried(auth_env):
+    fake, _headers = _paid_starter_then_growth_checkout(auth_env)
+    with auth_env.session_factory() as session:
+        growth = session.scalar(
+            select(BillingSubscriptionRecord).where(
+                BillingSubscriptionRecord.provider_id == "sub_growth_123"
+            )
+        )
+        growth.paid_through = datetime.now(UTC) + timedelta(days=30)
+        growth.status = "active"
+        session.commit()
+
+    def unavailable(_subscription_id):
+        raise ApiError(
+            status_code=503,
+            code="BILLING_PROVIDER_UNAVAILABLE",
+            message="Billing is temporarily unavailable.",
+        )
+
+    original_cancel = fake.cancel_at_cycle_end
+    fake.cancel_at_cycle_end = unavailable
+    assert cancel_superseded_renewals(auth_env.session_factory, fake) == {
+        "cancelled": 0,
+        "failed": 1,
+    }
+    with auth_env.session_factory() as session:
+        starter = session.scalar(
+            select(BillingSubscriptionRecord).where(
+                BillingSubscriptionRecord.provider_id == "sub_test_123"
+            )
+        )
+        assert starter.cancel_at_cycle_end is False
+    fake.cancel_at_cycle_end = original_cancel
+    assert cancel_superseded_renewals(auth_env.session_factory, fake) == {
+        "cancelled": 1,
+        "failed": 0,
+    }
+
+
+def test_one_failed_lower_tier_does_not_undo_another_cancellation(auth_env):
+    fake, _headers = _paid_starter_then_growth_checkout(auth_env)
+    fake.growth_status = "active"
+    with auth_env.session_factory() as session:
+        growth = session.scalar(
+            select(BillingSubscriptionRecord).where(
+                BillingSubscriptionRecord.provider_id == "sub_growth_123"
+            )
+        )
+        growth.paid_through = datetime.now(UTC) + timedelta(days=30)
+        growth.status = "active"
+        session.add(
+            BillingSubscriptionRecord(
+                user_id=growth.user_id,
+                plan_code="scale",
+                provider_id="sub_scale_123",
+                provider_plan_id="plan_Scale",
+                status="active",
+                checkout_url="https://rzp.io/rzp/scale",
+                paid_through=datetime.now(UTC) + timedelta(days=30),
+            )
+        )
+        session.commit()
+    original_get = fake.get_subscription
+    fake.get_subscription = lambda subscription_id: (
+        {
+            "id": "sub_scale_123",
+            "plan_id": "plan_Scale",
+            "status": "active",
+            "quantity": 1,
+            "paid_count": 1,
+        }
+        if subscription_id == "sub_scale_123"
+        else original_get(subscription_id)
+    )
+    original_cancel = fake.cancel_at_cycle_end
+
+    def fail_growth(subscription_id):
+        if subscription_id == "sub_growth_123":
+            raise ApiError(
+                status_code=503,
+                code="BILLING_PROVIDER_UNAVAILABLE",
+                message="Provider unavailable.",
+            )
+        return original_cancel(subscription_id)
+
+    fake.cancel_at_cycle_end = fail_growth
+    assert cancel_superseded_renewals(auth_env.session_factory, fake) == {
+        "cancelled": 1,
+        "failed": 1,
+    }
+    with auth_env.session_factory() as session:
+        rows = {
+            row.plan_code: row.cancel_at_cycle_end
+            for row in session.scalars(select(BillingSubscriptionRecord))
+        }
+    assert rows == {"starter": True, "growth": False, "scale": False}
+    fake.cancel_at_cycle_end = lambda subscription_id: {
+        "id": subscription_id,
+        "plan_id": "plan_Growth",
+        "status": "active",
+    }
+    assert cancel_superseded_renewals(auth_env.session_factory, fake) == {
+        "cancelled": 1,
+        "failed": 0,
+    }
+
+
+def test_upgrade_close_to_renewal_requires_support_before_new_checkout(auth_env):
+    fake, token = _setup(auth_env)
+    headers = auth_env.csrf_headers(token)
+    assert (
+        auth_env.client.post(
+            "/api/v1/billing/subscriptions", json={"plan": "starter"}, headers=headers
+        ).status_code
+        == 200
+    )
+    fake.status = "active"
+    assert _webhook(auth_env).status_code == 200
+    assert _drain(auth_env, fake)["done"] == 1
+    with auth_env.session_factory() as session:
+        starter = session.scalar(select(BillingSubscriptionRecord))
+        starter.paid_through = datetime.now(UTC) + timedelta(hours=12)
+        session.commit()
+    original_plan = fake.get_plan
+    fake.get_plan = lambda plan_id: (
+        {
+            "id": plan_id,
+            "period": "monthly",
+            "interval": 1,
+            "item": {"amount": 19900, "currency": "INR"},
+        }
+        if plan_id == "plan_Growth"
+        else original_plan(plan_id)
+    )
+    attempt = auth_env.client.post(
+        "/api/v1/billing/subscriptions", json={"plan": "growth"}, headers=headers
+    )
+    assert attempt.status_code == 409
+    assert attempt.json()["error"]["code"] == "UPGRADE_TOO_CLOSE_TO_RENEWAL"
+    assert fake.created == 1
 
 
 def test_billing_off_by_default(auth_env):

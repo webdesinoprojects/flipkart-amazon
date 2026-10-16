@@ -91,6 +91,29 @@ while it embeds Celery Beat; scaling workers also duplicates the scheduler.
 Database claims prevent duplicate credit grants, but a standalone single Beat
 service is required before scaling the worker tier.
 
+### Paid upgrades
+
+Starter, Growth and Scale have 300, 700 and 1,200 daily credits respectively.
+A seller can buy only a **higher** tier while an earlier paid period remains.
+This creates a new full-price monthly Razorpay subscription; it does not edit
+the old mandate, prorate the price or refund the earlier payment. Razorpay's
+hosted checkout must show and authorise the entire new tier's price. Only a
+worker-verified captured full-price invoice activates the new allowance.
+While both paid periods overlap, allowances add (Starter + Growth = 1,000/day).
+Credits already used that day still count. When Starter's paid period ends,
+Growth alone gives 700/day. No second purchase is permitted for the same or a
+lower tier, and a new checkout cannot start within 24 hours of a renewing
+paid period's end; use support for that timing edge case.
+
+The `billing.cancel_superseded` worker task runs every 20 seconds after a
+higher-tier payment is verified and stops renewal on every lower active tier
+**at its cycle end**. It never shortens already-paid access. The operation is
+retried if Razorpay is unavailable. `/health/ready` reports
+`billing_upgrade_cleanup: stale` (HTTP 503) if a verified upgrade's previous
+renewal is still open after five minutes. Investigate this before its next
+renewal; the task and webhook worker must run together. Test the full upgrade
+and cancellation flow with small controlled payments before offering it broadly.
+
 To backfill one account without an admin dashboard, find its existing `sub_...`
 ID and run:
 
@@ -124,6 +147,8 @@ is at least five minutes old. The API container healthcheck deliberately uses
 take the free tool offline. Configure an external uptime alert for non-200
 readiness responses and investigate any nonzero
 `billing_oldest_unresolved_seconds` that keeps rising. Also inspect the
+`billing_upgrade_cleanup` status after an upgrade; a stale value means the
+previous plan might still renew. Also inspect the
 signed-in subscription status and Razorpay
 webhook delivery dashboard. Do not paste a full `docker compose config`,
 `.env`, or process environment into chat; those can contain secrets.

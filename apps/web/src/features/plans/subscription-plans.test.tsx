@@ -163,4 +163,32 @@ describe("SubscriptionPlans", () => {
       screen.queryByRole("button", { name: /cancel/i }),
     ).not.toBeInTheDocument();
   });
+
+  it("shows full-price stacked-credit terms before starting a paid upgrade", async () => {
+    requestMock.mockResolvedValueOnce({
+      ...awaitingCharge,
+      activePlan: "Starter",
+      dailyCredits: 300,
+      currentStatus: "active",
+      paidThrough: "2026-11-15T00:00:00Z",
+      pendingPlan: null,
+      pendingStatus: null,
+      canCancelRenewal: true,
+    });
+    render(<SubscriptionPlans />);
+    const upgradeButtons = await screen.findAllByRole("button", {
+      name: /upgrade to/i,
+    });
+    expect(upgradeButtons).toHaveLength(2);
+    expect(screen.getByRole("button", { name: "CURRENT PLAN" })).toBeDisabled();
+    await userEvent.setup().click(upgradeButtons[0]!);
+    expect(
+      screen.getByRole("dialog", { name: "Add Growth capacity?" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/full ₹199 monthly subscription/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/1,000 credits/i)).toBeInTheDocument();
+    expect(requestMock).toHaveBeenCalledTimes(1);
+  });
 });

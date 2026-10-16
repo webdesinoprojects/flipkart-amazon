@@ -10,6 +10,7 @@ from .models import BatchRecord, DocumentRecord
 from .modules.auth.cleanup import purge_expired_auth_rows
 from .modules.billing.gateway import get_gateway
 from .modules.billing.processing import (
+    cancel_superseded_renewals,
     process_due_events,
     prune_processed_events,
     reconcile_due_subscriptions,
@@ -145,6 +146,14 @@ def billing_process_events() -> dict[str, int]:
     if not settings.razorpay_api_configured:
         return {"done": 0, "retry": 0, "ignored": 0, "skipped": 0}
     return process_due_events(SessionLocal, get_gateway(settings), limit=20)
+
+
+@celery_app.task(name="billing.cancel_superseded", soft_time_limit=240, time_limit=300)
+def billing_cancel_superseded() -> dict[str, int]:
+    settings = get_settings()
+    if not settings.razorpay_api_configured:
+        return {"cancelled": 0, "failed": 0}
+    return cancel_superseded_renewals(SessionLocal, get_gateway(settings))
 
 
 @celery_app.task(name="billing.reconcile", soft_time_limit=540, time_limit=600)
