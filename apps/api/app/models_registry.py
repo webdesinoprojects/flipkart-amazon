@@ -14,3 +14,4 @@ def import_all_models() -> None:
     from .modules.audit import models as audit_models  # noqa: F401
     from .modules.auth import models as auth_models  # noqa: F401
     from .modules.billing import models as billing_models  # noqa: F401
+    from .modules.credits import models as credit_models  # noqa: F401

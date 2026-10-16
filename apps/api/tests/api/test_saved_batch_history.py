@@ -3,11 +3,14 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime, timedelta
 from io import BytesIO
+from uuid import uuid4
 
 from pypdf import PdfWriter
 from sqlalchemy import select
 
 from app.models import BatchRecord, SavedOutputRecord
+from app.modules.auth.models import UserRecord
+from app.modules.credits.models import CreditGrantRecord
 
 
 def generated_pdf(pages: int = 2) -> bytes:
@@ -259,3 +262,74 @@ def test_replacing_one_batch_only_charges_its_latest_label_count(auth_env):
     summary = auth_env.client.get("/api/v1/dashboard/summary").json()
     assert summary["usageToday"] == 100
     assert summary["availableCredits"] == 0
+
+
+def test_one_time_grant_is_spent_by_real_saves_and_replacements(auth_env):
+    auth_env.create_account("bonus-owner@example.com")
+    auth_env.create_account("bonus-admin@example.com")
+    auth_env.promote_to_admin("bonus-admin@example.com")
+    with auth_env.session_factory() as session:
+        owner = session.scalar(
+            select(UserRecord).where(UserRecord.email_canonical == "bonus-owner@example.com")
+        )
+        admin = session.scalar(
+            select(UserRecord).where(UserRecord.email_canonical == "bonus-admin@example.com")
+        )
+        assert owner is not None and admin is not None
+        session.add(
+            CreditGrantRecord(
+                user_id=owner.id,
+                granted_by_user_id=admin.id,
+                request_id=str(uuid4()),
+                amount=5,
+                remaining=5,
+                reason="Support adjustment",
+                expires_at=datetime.now(UTC) + timedelta(days=7),
+            )
+        )
+        session.commit()
+    login = auth_env.login("bonus-owner@example.com")
+    assert login.status_code == 200
+    csrf = login.json()["csrfToken"]
+    assert (
+        save(
+            auth_env, csrf, body=metadata("batch-bonus-base-01", pages=100), pdf=generated_pdf(100)
+        ).status_code
+        == 201
+    )
+    first = save(
+        auth_env, csrf, body=metadata("batch-bonus-extra-01", pages=3), pdf=generated_pdf(3)
+    )
+    assert first.status_code == 201, first.text
+    assert auth_env.client.get("/api/v1/dashboard/summary").json()["availableCredits"] == 2
+    repeated = save(
+        auth_env, csrf, body=metadata("batch-bonus-extra-01", pages=3), pdf=generated_pdf(3)
+    )
+    assert repeated.status_code == 200
+    assert auth_env.client.get("/api/v1/dashboard/summary").json()["availableCredits"] == 2
+    replaced = save(
+        auth_env, csrf, body=metadata("batch-bonus-extra-01", pages=2), pdf=generated_pdf(2)
+    )
+    assert replaced.status_code == 200, replaced.text
+    assert auth_env.client.get("/api/v1/dashboard/summary").json()["availableCredits"] == 3
+    assert (
+        save(
+            auth_env, csrf, body=metadata("batch-bonus-extra-02", pages=3), pdf=generated_pdf(3)
+        ).status_code
+        == 201
+    )
+    assert auth_env.client.get("/api/v1/dashboard/summary").json()["availableCredits"] == 0
+    blocked = save(
+        auth_env, csrf, body=metadata("batch-bonus-extra-03", pages=1), pdf=generated_pdf(1)
+    )
+    assert blocked.status_code == 429
+    with auth_env.session_factory() as session:
+        grant = session.scalar(select(CreditGrantRecord))
+        assert grant is not None
+        grant.expires_at = datetime.now(UTC) - timedelta(hours=1)
+        session.commit()
+    reduced_after_expiry = save(
+        auth_env, csrf, body=metadata("batch-bonus-extra-02", pages=2), pdf=generated_pdf(2)
+    )
+    assert reduced_after_expiry.status_code == 200
+    assert auth_env.client.get("/api/v1/dashboard/summary").json()["availableCredits"] == 0

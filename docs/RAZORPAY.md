@@ -124,9 +124,9 @@ docker compose exec -T api python -m app.cli reconcile-billing --subscription-id
 The command only grants credits from a matching paid Razorpay invoice and captured
 payment; it never accepts an amount or credit count from the operator. A nonzero
 exit or `flagged` count requires investigation. Do not paste private keys, complete
-`.env` files or customer payment details into chat. A future admin dashboard can
-read these billing records and expose an audited manual-credit workflow; it is
-not required for the initial repair path.
+`.env` files or customer payment details into chat. The admin dashboard shows
+local billing records and supports audited one-time support-credit grants, but
+those grants are not a substitute for reconciling a missing paid invoice.
 
 ## Safe deployment checks
 

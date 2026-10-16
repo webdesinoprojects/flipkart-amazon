@@ -13,7 +13,7 @@ export default async function CreditsPage() {
     <DashboardPage
       eyebrow="ACCOUNT / USAGE"
       title="Usage without guesswork."
-      description="One successfully prepared label uses one credit. Your early-access allowance refreshes daily in Asia/Kolkata."
+      description="One successfully prepared label uses one credit. Plan credits refresh daily in Asia/Kolkata; one-time support credits expire on their grant date."
     >
       <div className={styles.routeGrid}>
         <StatusCard
@@ -22,7 +22,7 @@ export default async function CreditsPage() {
           value={
             summary?.availableCredits?.toLocaleString("en-IN") ?? "Not active"
           }
-          copy="Credits remaining in the current early-access day."
+          copy="Daily plan credits plus any unexpired one-time credits."
         />
         <StatusCard
           icon={<Activity aria-hidden="true" size={21} />}

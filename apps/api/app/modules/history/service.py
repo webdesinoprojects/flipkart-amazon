@@ -17,9 +17,11 @@ from ...platform.http.errors import ApiError
 from ...providers.storage import StorageProvider
 from ..billing.service import plan_allowance
 from ..credits.service import (
+    allowance_window,
     assert_daily_allowance,
     available_credits,
     lock_account_for_credit_check,
+    spend_bonus_for_batch,
 )
 from .presenters import present_saved_batch
 from .schemas import DailyUsageOut, DashboardSummaryOut, SavedBatchListOut, SavedBatchMetadata
@@ -80,13 +82,21 @@ def save_generated_batch(
     if existing is not None:
         if existing.request_digest == digest:
             return existing, False
-        assert_daily_allowance(
-            session,
-            user_id=user_id,
-            requested_labels=metadata.labelsReady,
-            daily_limit=plan_allowance(session, user_id, settings)[1],
-            replaced_batch=existing,
+        same_day = (
+            existing.completed_at is not None
+            and allowance_window(datetime.now(UTC))[0]
+            <= as_utc(existing.completed_at)
+            < allowance_window(datetime.now(UTC))[1]
         )
+        bonus_needed = None
+        if not (same_day and existing.labels_ready == metadata.labelsReady):
+            bonus_needed = assert_daily_allowance(
+                session,
+                user_id=user_id,
+                requested_labels=metadata.labelsReady,
+                daily_limit=plan_allowance(session, user_id, settings)[1],
+                replaced_batch=existing,
+            )
         return (
             _replace_saved_output(
                 session=session,
@@ -98,11 +108,13 @@ def save_generated_batch(
                 pdf_data=pdf_data,
                 pdf_sha256=pdf_sha256,
                 digest=digest,
+                bonus_needed=bonus_needed,
+                replace_same_day=same_day,
             ),
             False,
         )
 
-    assert_daily_allowance(
+    bonus_needed = assert_daily_allowance(
         session,
         user_id=user_id,
         requested_labels=metadata.labelsReady,
@@ -142,6 +154,10 @@ def save_generated_batch(
     )
     try:
         session.add(batch)
+        session.flush()
+        spend_bonus_for_batch(
+            session, user_id=user_id, batch_id=batch.id, amount=bonus_needed, now=now
+        )
         session.commit()
     except IntegrityError:
         session.rollback()
@@ -172,6 +188,8 @@ def _replace_saved_output(
     pdf_data: bytes,
     pdf_sha256: str,
     digest: str,
+    bonus_needed: int | None,
+    replace_same_day: bool,
 ) -> BatchRecord:
     """Swap the stored PDF and metadata of an existing owned record.
 
@@ -215,6 +233,15 @@ def _replace_saved_output(
         output.page_count = metadata.outputPageCount
         output.filename = OUTPUT_FILENAMES[metadata.outputLayout]
         output.expires_at = expires_at
+        if bonus_needed is not None:
+            spend_bonus_for_batch(
+                session,
+                user_id=user_id,
+                batch_id=batch.id,
+                amount=bonus_needed,
+                now=now,
+                replace_same_day=replace_same_day,
+            )
         session.commit()
     except Exception:
         session.rollback()

@@ -80,7 +80,7 @@ export function DashboardOverview({
           }
           note={
             summary?.activePlan
-              ? `${summary.activePlan} · refreshes daily`
+              ? `${summary.activePlan} · plan credits refresh daily; bonus credits expire`
               : "Credit status is temporarily unavailable."
           }
         />
