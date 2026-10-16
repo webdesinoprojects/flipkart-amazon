@@ -7,7 +7,7 @@
   --accent-deep: #1c7451;
   min-height: 100vh;
   padding: clamp(10px, 1.9vw, 28px);
-  overflow: hidden;
+  overflow: clip;
   position: relative;
   isolation: isolate;
   background: #dce8eb;
@@ -55,7 +55,7 @@
   margin: auto;
   display: grid;
   grid-template-columns: 240px minmax(0, 1fr);
-  overflow: hidden;
+  overflow: clip;
   border: 1px solid rgba(255, 255, 255, 0.82);
   border-radius: 30px;
   background: rgba(246, 252, 252, 0.43);
@@ -66,9 +66,14 @@
 }
 
 .sidebar {
+  position: sticky;
+  top: clamp(10px, 1.9vw, 28px);
+  align-self: start;
   display: flex;
   flex-direction: column;
   min-width: 0;
+  height: calc(100dvh - clamp(20px, 3.8vw, 56px));
+  min-height: 500px;
   padding: 25px 16px 20px;
   background: linear-gradient(
     160deg,
@@ -995,6 +1000,9 @@
     z-index: 50;
     inset: 0 auto 0 0;
     width: min(290px, 85vw);
+    height: 100dvh;
+    min-height: 0;
+    overflow-y: auto;
     transform: translateX(-110%);
     transition: transform 220ms ease;
     box-shadow: 20px 0 40px rgba(16, 44, 40, 0.25);
