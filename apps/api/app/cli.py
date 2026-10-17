@@ -34,8 +34,8 @@ EXIT_OK = 0
 EXIT_USAGE = 2
 EXIT_ABORTED = 3
 
-PRODUCTION_MIN_LENGTH = 16
-"""Production refuses a short bootstrap password even if the policy allows it."""
+PRODUCTION_MIN_LENGTH = 5
+"""Production admin bootstrap minimum; the shared password policy also applies."""
 
 
 def _read_password(password_file: str | None, *, confirm: bool) -> str:

@@ -204,7 +204,7 @@ def test_an_invalid_address_is_refused(bootstrap):
     assert users(factory) == []
 
 
-def test_production_refuses_a_short_bootstrap_password(bootstrap, monkeypatch, tmp_path):
+def test_production_requires_five_characters_for_admin_bootstrap(bootstrap, monkeypatch, tmp_path):
     factory, _, _ = bootstrap
     monkeypatch.setattr(
         cli,
@@ -216,13 +216,27 @@ def test_production_refuses_a_short_bootstrap_password(bootstrap, monkeypatch, t
             app_public_origins="https://labels.example",
         ),
     )
-    path = tmp_path / "medium"
-    path.write_text("just-long-eno\n", encoding="utf-8")
+    monkeypatch.setattr(
+        cli,
+        "build_password_service",
+        lambda _settings: password_service_from_parameters(
+            time_cost=1, memory_kib=8192, parallelism=1, min_length=4, max_bytes=1024
+        ),
+    )
+    path = tmp_path / "short"
+    path.write_text("four\n", encoding="utf-8")
     assert (
         cli.main(["create-admin", "--email", "owner@example.com", "--password-file", str(path)])
         == cli.EXIT_USAGE
     )
     assert users(factory) == []
+
+    path.write_text("fives\n", encoding="utf-8")
+    assert (
+        cli.main(["create-admin", "--email", "owner@example.com", "--password-file", str(path)])
+        == cli.EXIT_OK
+    )
+    assert users(factory)[0].role == "admin"
 
 
 def test_a_missing_secret_file_exits_without_creating_anything(bootstrap):

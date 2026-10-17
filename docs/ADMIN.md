@@ -9,6 +9,9 @@ payment methods, customer label PDFs or raw webhook bodies.
 There is no default admin password. Promote an authorized account using the
 existing `python -m app.cli create-admin --help` operator flow, then sign in
 normally. The server rechecks the admin role from PostgreSQL on every API call.
+The production CLI accepts a new admin password of at least five characters,
+but this is only a minimum: use a unique, longer passphrase or a password
+manager-generated secret for accounts with access to customer and billing data.
 
 Overview revenue means captured subscription charges minus fully refunded
 charges in the local ledger. It is **not** Razorpay settlement, fees or tax
