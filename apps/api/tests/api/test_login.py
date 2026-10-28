@@ -106,6 +106,16 @@ def test_the_session_cookie_is_httponly_lax_and_path_scoped(auth_env):
     assert "secure" not in attributes, "development serves plain HTTP localhost"
 
 
+def test_login_issues_persistent_thirty_day_cookies(auth_env):
+    auth_env.register(EMAIL)
+    response = auth_env.login(EMAIL)
+    session = set_cookie_attributes(response, auth_env.settings.session_cookie_name)
+    csrf = set_cookie_attributes(response, auth_env.settings.csrf_cookie_name)
+    expected = str(30 * 86400)
+    assert session["max-age"] == expected
+    assert csrf["max-age"] == expected
+
+
 def test_the_csrf_cookie_is_readable_but_the_session_cookie_is_not(auth_env):
     auth_env.register(EMAIL)
     response = auth_env.login(EMAIL)

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { plans } from "@/features/plans/catalog";
 import { Logo } from "./logo";
+import { WORKSPACE_ENTRY } from "./navigation";
 import styles from "./pricing.module.css";
 
 export function PricingFooter() {
@@ -51,7 +52,9 @@ export function PricingFooter() {
               <Link
                 className={styles.planButton}
                 href={
-                  plan.code === "free" ? "/register" : "/dashboard/subscription"
+                  plan.code === "free"
+                    ? WORKSPACE_ENTRY
+                    : "/dashboard/subscription"
                 }
               >
                 {plan.code === "free" ? "START FREE" : "VIEW PLAN"}{" "}
@@ -102,7 +105,7 @@ export function PricingFooter() {
           <br />
           BATCH PRINT READY.
         </h2>
-        <Link className={styles.buttonLight} href="/register">
+        <Link className={styles.buttonLight} href={WORKSPACE_ENTRY}>
           CROP MY LABELS FREE <span aria-hidden="true">↗</span>
         </Link>
       </section>

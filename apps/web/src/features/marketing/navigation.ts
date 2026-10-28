@@ -6,3 +6,5 @@ export const navigation = [
   ["FAQ", "#faq"],
   ["Pricing", "#pricing"],
 ] as const;
+
+export const WORKSPACE_ENTRY = "/dashboard/labels";

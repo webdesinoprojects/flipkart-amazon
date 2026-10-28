@@ -3,7 +3,7 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { navigation } from "./navigation";
+import { navigation, WORKSPACE_ENTRY } from "./navigation";
 import styles from "./navigation.module.css";
 
 export function ThemeToggle() {
@@ -81,7 +81,7 @@ export function MobileNavigation() {
               ))}
             </nav>
             <Dialog.Close asChild>
-              <Link className={styles.mobileCta} href="/register">
+              <Link className={styles.mobileCta} href={WORKSPACE_ENTRY}>
                 START PROCESSING ↗
               </Link>
             </Dialog.Close>

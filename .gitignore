@@ -7,8 +7,6 @@ dist/
 .turbo/
 .npm-cache/
 *.tsbuildinfo
-.env
-.env.*
 !.env.example
 *.log
 .DS_Store
@@ -26,3 +24,4 @@ dev/agent-handoffs/
 docs/fixtures/**/*.pdf
 marketplace-shipping-label-normalizer-master-prompt.md
 apps/web/AGENTS.md
+config.bat

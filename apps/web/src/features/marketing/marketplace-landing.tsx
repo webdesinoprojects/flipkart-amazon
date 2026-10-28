@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Logo } from "./logo";
+import { WORKSPACE_ENTRY } from "./navigation";
 import styles from "./marketplace-landing.module.css";
 
 export type MarketplaceLandingContent = {
@@ -47,7 +48,7 @@ export function MarketplaceLanding({
           <a href="#questions">Questions</a>
           <Link href="/login">Sign in</Link>
         </nav>
-        <Link className={styles.headerCta} href="/register">
+        <Link className={styles.headerCta} href={WORKSPACE_ENTRY}>
           START FREE ↗
         </Link>
       </header>
@@ -58,7 +59,7 @@ export function MarketplaceLanding({
           <h1>{content.title}</h1>
           <p>{content.description}</p>
           <div className={styles.actions}>
-            <Link href="/register">Crop my labels free ↗</Link>
+            <Link href={WORKSPACE_ENTRY}>Crop my labels free ↗</Link>
             <a href="#how-it-works">See how it works ↓</a>
           </div>
           <small>
@@ -121,7 +122,7 @@ export function MarketplaceLanding({
       <section className={styles.finalCta}>
         <span>READY FOR THE NEXT BATCH?</span>
         <h2>Keep the labels. Leave the invoice pages behind.</h2>
-        <Link href="/register">CROP MY LABELS FREE ↗</Link>
+        <Link href={WORKSPACE_ENTRY}>CROP MY LABELS FREE ↗</Link>
       </section>
 
       <footer className={styles.footer}>

@@ -36,10 +36,14 @@ describe("public landing page", () => {
     }
     expect(
       screen.getByRole("link", { name: /START PROCESSING/ }),
-    ).toHaveAttribute("href", "/register");
+    ).toHaveAttribute("href", "/dashboard/labels");
     expect(
       screen.getByRole("link", { name: /Crop my labels free/ }),
-    ).toHaveAttribute("href", "/register");
+    ).toHaveAttribute("href", "/dashboard/labels");
+    expect(screen.getByRole("link", { name: /START FREE/ })).toHaveAttribute(
+      "href",
+      "/dashboard/labels",
+    );
 
     const heroVideo = document.querySelector("video");
     expect(heroVideo).toHaveAttribute("autoplay");

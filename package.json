@@ -13,8 +13,8 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace @label-normalizer/web",
-    "build": "npm run build --workspace @label-normalizer/web",
+    "dev": "node init && npm run dev --workspace @label-normalizer/web",
+    "build": "node init && npm run build --workspace @label-normalizer/web",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "typecheck": "npm run typecheck --workspaces --if-present",

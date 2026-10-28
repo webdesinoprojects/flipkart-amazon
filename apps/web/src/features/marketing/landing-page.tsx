@@ -3,7 +3,7 @@ import { HybridHeroVisual } from "./hybrid-hero-visual";
 import { MobileNavigation, ThemeToggle } from "./landing-controls";
 import { Logo } from "./logo";
 import { MarketplaceComparison } from "./marketplace-comparison";
-import { navigation } from "./navigation";
+import { navigation, WORKSPACE_ENTRY } from "./navigation";
 import { ProductSections } from "./product-sections";
 import { PricingFooter } from "./pricing-footer";
 import { SellerFaq } from "./seller-faq";
@@ -31,7 +31,7 @@ export function LandingPage() {
             </a>
           ))}
         </nav>
-        <Link className={navStyles.headerCta} href="/register">
+        <Link className={navStyles.headerCta} href={WORKSPACE_ENTRY}>
           START PROCESSING ↗
         </Link>
         <div className={navStyles.headerControls}>
@@ -56,7 +56,7 @@ export function LandingPage() {
                 a complete Flipkart, Amazon or Meesho batch for printing.
               </p>
               <div className={styles.heroActions}>
-                <Link className={styles.primaryCta} href="/register">
+                <Link className={styles.primaryCta} href={WORKSPACE_ENTRY}>
                   Crop my labels free <span aria-hidden="true">↗</span>
                 </Link>
                 <a className={styles.secondaryCta} href="#comparison">
